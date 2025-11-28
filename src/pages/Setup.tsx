@@ -1,16 +1,20 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Ruler, Weight, Target } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useWeightUnit } from "@/contexts/WeightUnitContext";
 import { createUserProfile, getUserProfile } from "@/lib/userProfile";
 import { useToast } from "@/hooks/use-toast";
+import { PageTransition } from '@/components/animations/PageTransition';
+import { motion } from "framer-motion";
 
 const Setup = () => {
   const navigate = useNavigate();
   const { currentUser, loading: authLoading } = useAuth();
+  const { unit } = useWeightUnit();
   const { toast } = useToast();
   const [currentWeight, setCurrentWeight] = useState("");
   const [targetWeight, setTargetWeight] = useState("");
@@ -51,7 +55,7 @@ const Setup = () => {
   // Show loading spinner while checking auth or profile
   if (authLoading || checkingProfile) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
@@ -120,107 +124,156 @@ const Setup = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-8">
-      {/* Header */}
-      <div className="px-6 pt-8 pb-6">
-        <Link to="/welcome">
-          <Button variant="ghost" size="icon" className="mb-4">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-        </Link>
-        <h1 className="text-3xl font-bold mb-2">Let's Get Started</h1>
-        <p className="text-muted-foreground">
-          Tell us about yourself to personalize your experience
-        </p>
+    <PageTransition>
+      <div className="min-h-screen bg-background pb-8 relative overflow-hidden">
+        {/* Background Gradients */}
+        <div className="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+          <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-primary/5 blur-[100px]" />
+          <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-secondary/5 blur-[100px]" />
+        </div>
+
+        {/* Header */}
+        <div className="px-6 pt-8 pb-6">
+          <Link to="/welcome">
+            <Button variant="ghost" size="icon" className="mb-4">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+          </Link>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+          >
+            <h1 className="text-3xl font-bold mb-2 font-heading">Let's Get Started</h1>
+            <p className="text-muted-foreground">
+              Tell us about yourself to personalize your experience
+            </p>
+          </motion.div>
+        </div>
+
+        <div className="px-6 space-y-6">
+          {/* Current Weight */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-card/50 backdrop-blur-sm rounded-3xl p-6 shadow-sm border border-border/50"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <Weight className="w-5 h-5 text-primary" />
+              <Label className="text-base font-semibold block">Current Weight</Label>
+            </div>
+            <div className="flex items-end gap-2">
+              <Input
+                type="number"
+                placeholder="170"
+                value={currentWeight}
+                onChange={(e) => setCurrentWeight(e.target.value)}
+                className="flex-1 bg-background/50 border-border/50 rounded-2xl h-16 text-2xl font-semibold text-center focus:border-primary transition-all"
+              />
+              <div className="h-16 px-4 flex items-center justify-center bg-background/50 rounded-2xl border border-border/50">
+                <span className="text-muted-foreground font-medium">{unit}</span>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Target Weight */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-card/50 backdrop-blur-sm rounded-3xl p-6 shadow-sm border border-border/50"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <Target className="w-5 h-5 text-primary" />
+              <Label className="text-base font-semibold block">Target Weight</Label>
+            </div>
+            <div className="flex items-end gap-2">
+              <Input
+                type="number"
+                placeholder="150"
+                value={targetWeight}
+                onChange={(e) => setTargetWeight(e.target.value)}
+                className="flex-1 bg-background/50 border-border/50 rounded-2xl h-16 text-2xl font-semibold text-center focus:border-primary transition-all"
+              />
+              <div className="h-16 px-4 flex items-center justify-center bg-background/50 rounded-2xl border border-border/50">
+                <span className="text-muted-foreground font-medium">{unit}</span>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Height */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-card/50 backdrop-blur-sm rounded-3xl p-6 shadow-sm border border-border/50"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <Ruler className="w-5 h-5 text-primary" />
+              <Label className="text-base font-semibold block">Height</Label>
+            </div>
+            <div className="flex items-end gap-2">
+              <Input
+                type="number"
+                placeholder="5"
+                value={heightFeet}
+                onChange={(e) => setHeightFeet(e.target.value)}
+                className="flex-1 bg-background/50 border-border/50 rounded-2xl h-16 text-2xl font-semibold text-center focus:border-primary transition-all"
+              />
+              <span className="text-2xl font-semibold text-muted-foreground mb-4">ft</span>
+              <Input
+                type="number"
+                placeholder="10"
+                value={heightInches}
+                onChange={(e) => setHeightInches(e.target.value)}
+                className="flex-1 bg-background/50 border-border/50 rounded-2xl h-16 text-2xl font-semibold text-center focus:border-primary transition-all"
+              />
+              <div className="h-16 px-4 flex items-center justify-center bg-background/50 rounded-2xl border border-border/50">
+                <span className="text-muted-foreground font-medium">in</span>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Goal Info Card */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="bg-gradient-to-br from-primary to-accent rounded-3xl p-6 shadow-glow relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10" />
+            <h3 className="text-white font-semibold text-lg mb-2 relative z-10">
+              Your Journey Starts Now
+            </h3>
+            <p className="text-white/90 text-sm relative z-10">
+              We'll help you track your progress, stay accountable with daily check-ins, and celebrate every milestone along the way.
+            </p>
+          </motion.div>
+
+          {/* Submit Button */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <Button 
+              onClick={handleComplete}
+              disabled={loading}
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-2xl h-16 shadow-glow text-lg"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Complete Setup"
+              )}
+            </Button>
+          </motion.div>
+        </div>
       </div>
-
-      <div className="px-6 space-y-6">
-        {/* Current Weight */}
-        <div className="bg-card rounded-3xl p-6 shadow-card border border-border">
-          <Label className="text-base font-semibold mb-3 block">Current Weight</Label>
-          <div className="flex items-end gap-2">
-            <Input
-              type="number"
-              placeholder="170"
-              value={currentWeight}
-              onChange={(e) => setCurrentWeight(e.target.value)}
-              className="flex-1 bg-secondary border-border rounded-2xl h-16 text-2xl font-semibold text-center focus:border-primary transition-smooth"
-            />
-            <div className="h-16 px-4 flex items-center justify-center bg-secondary rounded-2xl border border-border">
-              <span className="text-muted-foreground font-medium">lbs</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Target Weight */}
-        <div className="bg-card rounded-3xl p-6 shadow-card border border-border">
-          <Label className="text-base font-semibold mb-3 block">Target Weight</Label>
-          <div className="flex items-end gap-2">
-            <Input
-              type="number"
-              placeholder="150"
-              value={targetWeight}
-              onChange={(e) => setTargetWeight(e.target.value)}
-              className="flex-1 bg-secondary border-border rounded-2xl h-16 text-2xl font-semibold text-center focus:border-primary transition-smooth"
-            />
-            <div className="h-16 px-4 flex items-center justify-center bg-secondary rounded-2xl border border-border">
-              <span className="text-muted-foreground font-medium">lbs</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Height */}
-        <div className="bg-card rounded-3xl p-6 shadow-card border border-border">
-          <Label className="text-base font-semibold mb-3 block">Height</Label>
-          <div className="flex items-end gap-2">
-            <Input
-              type="number"
-              placeholder="5"
-              value={heightFeet}
-              onChange={(e) => setHeightFeet(e.target.value)}
-              className="flex-1 bg-secondary border-border rounded-2xl h-16 text-2xl font-semibold text-center focus:border-primary transition-smooth"
-            />
-            <span className="text-2xl font-semibold text-muted-foreground mb-4">ft</span>
-            <Input
-              type="number"
-              placeholder="10"
-              value={heightInches}
-              onChange={(e) => setHeightInches(e.target.value)}
-              className="flex-1 bg-secondary border-border rounded-2xl h-16 text-2xl font-semibold text-center focus:border-primary transition-smooth"
-            />
-            <div className="h-16 px-4 flex items-center justify-center bg-secondary rounded-2xl border border-border">
-              <span className="text-muted-foreground font-medium">in</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Goal Info Card */}
-        <div className="bg-gradient-primary rounded-3xl p-6 shadow-glow">
-          <h3 className="text-primary-foreground font-semibold text-lg mb-2">
-            Your Journey Starts Now
-          </h3>
-          <p className="text-primary-foreground/80 text-sm">
-            We'll help you track your progress, stay accountable with daily check-ins, and celebrate every milestone along the way.
-          </p>
-        </div>
-
-        {/* Submit Button */}
-        <Button 
-          onClick={handleComplete}
-          disabled={loading}
-          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-2xl h-16 shadow-glow text-lg"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            "Complete Setup"
-          )}
-        </Button>
-      </div>
-    </div>
+    </PageTransition>
   );
 };
 

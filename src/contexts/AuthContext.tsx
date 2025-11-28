@@ -10,6 +10,7 @@ import {
   signInWithPopup
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { api } from '@/lib/api';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -22,15 +23,36 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
-export const useAuth = () => {
+export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
+}
+
+// Helper function to sync user to backend database
+const syncUserToBackend = async (user: User) => {
+  try {
+    await api.users.create({
+      id: user.uid,
+      email: user.email || '',
+      displayName: user.displayName || undefined,
+      photoURL: user.photoURL || undefined,
+    });
+    console.log('User synced to backend database');
+  } catch (error: any) {
+    // 409 Conflict means user already exists, which is fine
+    // 401 Unauthorized might happen if Firebase auth guard is not set up yet
+    if (error?.response?.status === 409 || error?.response?.status === 401) {
+      console.log('User already exists in database or auth not configured');
+    } else {
+      console.error('Error syncing user to backend:', error);
+    }
+  }
 };
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -39,7 +61,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       if (userCredential.user) {
         await updateProfile(userCredential.user, { displayName });
-        // Note: User profile will be created in Setup page after user completes initial setup
+        // Sync new user to backend database
+        await syncUserToBackend(userCredential.user);
       }
     } catch (error: unknown) {
       console.error('Firebase signup error:', error);
@@ -50,13 +73,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const login = (email: string, password: string) => {
-    return signInWithEmailAndPassword(auth, email, password);
+  const login = async (email: string, password: string) => {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    // Ensure user exists in backend database on login
+    await syncUserToBackend(userCredential.user);
+    return userCredential;
   };
 
   const loginWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    return await signInWithPopup(auth, provider);
+    try {
+      const provider = new GoogleAuthProvider();
+      console.log('[Auth] Starting Google login...');
+      const userCredential = await signInWithPopup(auth, provider);
+      console.log('[Auth] Google login successful, syncing to backend...');
+      // Sync Google user to backend database
+      await syncUserToBackend(userCredential.user);
+      console.log('[Auth] Google user synced to backend');
+      return userCredential;
+    } catch (error: any) {
+      console.error('[Auth] Google login error:', error);
+      console.error('[Auth] Error code:', error.code);
+      console.error('[Auth] Error message:', error.message);
+      throw error;
+    }
   };
 
   const logout = () => {
@@ -64,7 +103,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // Sync user to backend when auth state changes (e.g., page refresh)
+        await syncUserToBackend(user);
+      }
       setCurrentUser(user);
       setLoading(false);
     });

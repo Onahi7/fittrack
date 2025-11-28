@@ -1,24 +1,28 @@
-import {
-  collection,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-  orderBy,
-  limit,
-  Timestamp,
-  serverTimestamp,
-  increment,
-  arrayUnion,
-  arrayRemove,
-} from 'firebase/firestore';
-import { db } from './firebase';
+import { api } from './api';
+import axios from 'axios';
+import { auth } from './firebase';
 
-// Collection names for community features
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+// Create axios client for community endpoints
+const communityClient = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add Firebase token to all requests
+communityClient.interceptors.request.use(async (config) => {
+  const user = auth.currentUser;
+  if (user) {
+    const token = await user.getIdToken();
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Collection names for community features (for reference)
 export const COMMUNITY_COLLECTIONS = {
   GROUPS: 'groups',
   POSTS: 'posts',
@@ -45,51 +49,28 @@ export interface Group {
   createdAt?: unknown;
 }
 
+// Groups - placeholder implementations (backend endpoints needed)
 export async function createGroup(userId: string, groupData: Omit<Group, 'id' | 'creatorId' | 'memberIds' | 'memberCount' | 'createdAt'>) {
-  return await addDoc(collection(db, COMMUNITY_COLLECTIONS.GROUPS), {
-    ...groupData,
-    creatorId: userId,
-    memberIds: [userId],
-    memberCount: 1,
-    createdAt: serverTimestamp(),
-  });
+  console.warn('Groups feature not yet implemented in backend');
+  return { id: 'placeholder' };
 }
 
 export async function joinGroup(groupId: string, userId: string) {
-  const groupRef = doc(db, COMMUNITY_COLLECTIONS.GROUPS, groupId);
-  await updateDoc(groupRef, {
-    memberIds: arrayUnion(userId),
-    memberCount: increment(1),
-  });
+  console.warn('Groups feature not yet implemented in backend');
 }
 
 export async function leaveGroup(groupId: string, userId: string) {
-  const groupRef = doc(db, COMMUNITY_COLLECTIONS.GROUPS, groupId);
-  await updateDoc(groupRef, {
-    memberIds: arrayRemove(userId),
-    memberCount: increment(-1),
-  });
+  console.warn('Groups feature not yet implemented in backend');
 }
 
 export async function getGroups(category?: string) {
-  const groupsRef = collection(db, COMMUNITY_COLLECTIONS.GROUPS);
-  let q = query(groupsRef, orderBy('memberCount', 'desc'), limit(50));
-  
-  if (category) {
-    q = query(groupsRef, where('category', '==', category), orderBy('memberCount', 'desc'));
-  }
-
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  console.warn('Groups feature not yet implemented in backend');
+  return [];
 }
 
 export async function getUserGroups(userId: string) {
-  const q = query(
-    collection(db, COMMUNITY_COLLECTIONS.GROUPS),
-    where('memberIds', 'array-contains', userId)
-  );
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  console.warn('Groups feature not yet implemented in backend');
+  return [];
 }
 
 // ==================== POSTS ====================
@@ -108,52 +89,28 @@ export interface Post {
   createdAt?: unknown;
 }
 
+// Posts - placeholder implementations (backend endpoints needed)
 export async function createPost(postData: Omit<Post, 'id' | 'likes' | 'commentCount' | 'createdAt'>) {
-  return await addDoc(collection(db, COMMUNITY_COLLECTIONS.POSTS), {
-    ...postData,
-    likes: 0,
-    commentCount: 0,
-    createdAt: serverTimestamp(),
-  });
+  console.warn('Posts feature not yet implemented in backend');
+  return { id: 'placeholder' };
 }
 
 export async function getFeedPosts(userId: string, limitCount = 20) {
-  const q = query(
-    collection(db, COMMUNITY_COLLECTIONS.POSTS),
-    orderBy('createdAt', 'desc'),
-    limit(limitCount)
-  );
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  console.warn('Posts feature not yet implemented in backend');
+  return [];
 }
 
 export async function getGroupPosts(groupId: string) {
-  const q = query(
-    collection(db, COMMUNITY_COLLECTIONS.POSTS),
-    where('groupId', '==', groupId),
-    orderBy('createdAt', 'desc')
-  );
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  console.warn('Posts feature not yet implemented in backend');
+  return [];
 }
 
 export async function likePost(postId: string, userId: string) {
-  const postRef = doc(db, COMMUNITY_COLLECTIONS.POSTS, postId);
-  await updateDoc(postRef, {
-    likes: increment(1),
-  });
-  
-  // Track user's like
-  await addDoc(collection(db, COMMUNITY_COLLECTIONS.REACTIONS), {
-    postId,
-    userId,
-    type: 'like',
-    createdAt: serverTimestamp(),
-  });
+  console.warn('Posts feature not yet implemented in backend');
 }
 
 export async function deletePost(postId: string) {
-  await deleteDoc(doc(db, COMMUNITY_COLLECTIONS.POSTS, postId));
+  console.warn('Posts feature not yet implemented in backend');
 }
 
 // ==================== CHALLENGES ====================
@@ -173,125 +130,108 @@ export interface Challenge {
   createdAt?: unknown;
 }
 
+// Challenges - placeholder implementations (backend endpoints needed)
 export async function createChallenge(userId: string, challengeData: Omit<Challenge, 'id' | 'creatorId' | 'participantCount' | 'createdAt'>) {
-  return await addDoc(collection(db, COMMUNITY_COLLECTIONS.CHALLENGES), {
-    ...challengeData,
-    creatorId: userId,
-    participantCount: 1,
-    createdAt: serverTimestamp(),
-  });
+  console.warn('Challenges feature not yet implemented in backend');
+  return { id: 'placeholder' };
 }
 
 export async function joinChallenge(challengeId: string, userId: string) {
-  const challengeRef = doc(db, COMMUNITY_COLLECTIONS.CHALLENGES, challengeId);
-  await updateDoc(challengeRef, {
-    participantCount: increment(1),
-  });
-
-  // Add participant record
-  await addDoc(collection(db, COMMUNITY_COLLECTIONS.CHALLENGE_PARTICIPANTS), {
-    challengeId,
-    userId,
-    progress: 0,
-    joinedAt: serverTimestamp(),
-  });
+  console.warn('Challenges feature not yet implemented in backend');
 }
 
 export async function updateChallengeProgress(challengeId: string, userId: string, progress: number) {
-  const q = query(
-    collection(db, COMMUNITY_COLLECTIONS.CHALLENGE_PARTICIPANTS),
-    where('challengeId', '==', challengeId),
-    where('userId', '==', userId),
-    limit(1)
-  );
-  const snapshot = await getDocs(q);
-  
-  if (snapshot.docs[0]) {
-    const docRef = doc(db, COMMUNITY_COLLECTIONS.CHALLENGE_PARTICIPANTS, snapshot.docs[0].id);
-    await updateDoc(docRef, { progress });
-  }
+  console.warn('Challenges feature not yet implemented in backend');
 }
 
 export async function getActiveChallenges() {
-  const now = Timestamp.now();
-  const q = query(
-    collection(db, COMMUNITY_COLLECTIONS.CHALLENGES),
-    where('endDate', '>=', now),
-    orderBy('endDate', 'asc')
-  );
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  console.warn('Challenges feature not yet implemented in backend');
+  return [];
 }
 
 export async function getUserChallenges(userId: string) {
-  const q = query(
-    collection(db, COMMUNITY_COLLECTIONS.CHALLENGE_PARTICIPANTS),
-    where('userId', '==', userId)
-  );
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  console.warn('Challenges feature not yet implemented in backend');
+  return [];
 }
 
 export async function getChallengeLeaderboard(challengeId: string) {
-  const q = query(
-    collection(db, COMMUNITY_COLLECTIONS.CHALLENGE_PARTICIPANTS),
-    where('challengeId', '==', challengeId),
-    orderBy('progress', 'desc'),
-    limit(10)
-  );
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  console.warn('Challenges feature not yet implemented in backend');
+  return [];
 }
 
-// ==================== FRIENDSHIPS ====================
+// ==================== FRIENDSHIPS (Using Buddies API) ====================
 
 export async function sendFriendRequest(fromUserId: string, toUserId: string) {
-  return await addDoc(collection(db, COMMUNITY_COLLECTIONS.FRIEND_REQUESTS), {
-    fromUserId,
-    toUserId,
-    status: 'pending',
-    createdAt: serverTimestamp(),
-  });
+  try {
+    const response = await communityClient.post('/buddies/request', {
+      buddyUserId: toUserId,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error sending friend request:', error);
+    throw error;
+  }
 }
 
 export async function acceptFriendRequest(requestId: string, fromUserId: string, toUserId: string) {
-  // Update request status
-  await updateDoc(doc(db, COMMUNITY_COLLECTIONS.FRIEND_REQUESTS, requestId), {
-    status: 'accepted',
-  });
-
-  // Create friendship
-  await addDoc(collection(db, COMMUNITY_COLLECTIONS.FRIENDSHIPS), {
-    user1Id: fromUserId,
-    user2Id: toUserId,
-    createdAt: serverTimestamp(),
-  });
+  try {
+    const response = await communityClient.post(`/buddies/requests/${requestId}/accept`);
+    return response.data;
+  } catch (error) {
+    console.error('Error accepting friend request:', error);
+    throw error;
+  }
 }
 
 export async function getFriends(userId: string) {
-  const q1 = query(
-    collection(db, COMMUNITY_COLLECTIONS.FRIENDSHIPS),
-    where('user1Id', '==', userId)
-  );
-  const q2 = query(
-    collection(db, COMMUNITY_COLLECTIONS.FRIENDSHIPS),
-    where('user2Id', '==', userId)
-  );
-
-  const [snapshot1, snapshot2] = await Promise.all([getDocs(q1), getDocs(q2)]);
-  
-  return [
-    ...snapshot1.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-    ...snapshot2.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-  ];
+  try {
+    const response = await communityClient.get('/buddies/active');
+    return response.data || [];
+  } catch (error) {
+    console.error('Error getting friends:', error);
+    return [];
+  }
 }
 
 export async function getFriendRequests(userId: string) {
-  const q = query(
-    collection(db, COMMUNITY_COLLECTIONS.FRIEND_REQUESTS),
-    where('toUserId', '==', userId),
-    where('status', '==', 'pending')
-  );
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  try {
+    const response = await communityClient.get('/buddies/requests/pending');
+    return response.data || [];
+  } catch (error) {
+    console.error('Error getting friend requests:', error);
+    return [];
+  }
+}
+
+// Suggested friends
+export async function getSuggestedFriends() {
+  try {
+    const response = await communityClient.get('/buddies/suggested');
+    return response.data || [];
+  } catch (error) {
+    console.error('Error fetching suggested friends:', error);
+    return [];
+  }
+}
+
+// Reject friend request
+export async function rejectFriendRequest(requestId: string) {
+  try {
+    const response = await communityClient.post(`/buddies/requests/${requestId}/reject`);
+    return response.data;
+  } catch (error) {
+    console.error('Error rejecting friend request:', error);
+    throw error;
+  }
+}
+
+// Remove friend (unbuddy)
+export async function removeFriend(buddyId: string) {
+  try {
+    const response = await communityClient.delete(`/buddies/${buddyId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error removing friend:', error);
+    throw error;
+  }
 }

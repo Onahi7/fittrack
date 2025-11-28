@@ -162,7 +162,9 @@ export function useUserChallenges() {
         setChallenges(userChallenges as Challenge[]);
         setError(null);
       } catch (err) {
-        setError(err as Error);
+        // Silently handle - challenges not yet implemented
+        setChallenges([]);
+        setError(null);
       } finally {
         setLoading(false);
       }
@@ -213,11 +215,18 @@ export function useChallengeLeaderboard(challengeId: string) {
   return { leaderboard, loading, error };
 }
 
+interface FriendshipBuddy {
+  displayName?: string;
+  photoURL?: string;
+}
+
 interface Friendship {
   id?: string;
   user1Id: string;
   user2Id: string;
   createdAt?: unknown;
+  buddy?: FriendshipBuddy; // enriched by backend
+  sharedGoals?: string[];  // optional enrichment
 }
 
 // Hook to manage friends
@@ -240,7 +249,9 @@ export function useFriends() {
         setFriends(userFriends as Friendship[]);
         setError(null);
       } catch (err) {
-        setError(err as Error);
+        // Silently handle - return empty array if error
+        setFriends([]);
+        setError(null);
       } finally {
         setLoading(false);
       }
@@ -252,12 +263,19 @@ export function useFriends() {
   return { friends, loading, error };
 }
 
+interface FriendRequestUser {
+  displayName?: string;
+  photoURL?: string;
+  goals?: string[];
+}
+
 interface FriendRequest {
   id?: string;
   fromUserId: string;
   toUserId: string;
   status: 'pending' | 'accepted' | 'rejected';
   createdAt?: unknown;
+  fromUser?: FriendRequestUser; // enriched by backend
 }
 
 // Hook to manage friend requests

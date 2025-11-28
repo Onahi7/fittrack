@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, User, Bell, Shield, HelpCircle, LogOut, ChevronRight, Trophy, Zap } from "lucide-react";
+import { ArrowLeft, User, Bell, Shield, HelpCircle, LogOut, ChevronRight, Trophy, Zap, Scale } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useWeightUnit } from "@/contexts/WeightUnitContext";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import BottomNav from "@/components/BottomNav";
@@ -12,6 +13,7 @@ import { motion } from "framer-motion";
 const Profile = () => {
   const { currentUser, logout } = useAuth();
   const { profile, loading } = useUserProfile();
+  const { unit, toggleUnit, formatWeight } = useWeightUnit();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -38,7 +40,7 @@ const Profile = () => {
   ];
 
   const menuItems = [
-    { icon: User, label: "Edit Profile", to: "/profile/edit" },
+    { icon: User, label: "Edit Profile", to: "/setup" },
     { icon: Bell, label: "Notifications", to: "/profile/notifications" },
     { icon: Shield, label: "Privacy & Security", to: "/profile/privacy" },
     { icon: HelpCircle, label: "Help & Support", to: "/profile/help" },
@@ -46,7 +48,13 @@ const Profile = () => {
 
   return (
     <PageTransition>
-      <div className="min-h-screen bg-background pb-24">
+      <div className="min-h-screen bg-background pb-32 relative overflow-hidden">
+        {/* Background Gradients */}
+        <div className="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+          <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-primary/5 blur-[100px]" />
+          <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-secondary/5 blur-[100px]" />
+        </div>
+
       {/* Header */}
       <div className="px-6 pt-8 pb-6">
         <Link to="/">
@@ -114,13 +122,13 @@ const Profile = () => {
         </div>
 
         {/* Settings Menu */}
-        <div className="bg-card rounded-3xl overflow-hidden shadow-card border border-border">
+        <div className="bg-card/50 backdrop-blur-sm rounded-3xl overflow-hidden shadow-card border border-border/50">
           {menuItems.map((item, index) => {
             const Icon = item.icon;
             return (
               <Link key={index} to={item.to}>
                 <div className={`flex items-center gap-4 p-5 hover:bg-secondary/50 transition-smooth ${
-                  index !== menuItems.length - 1 ? 'border-b border-border' : ''
+                  index !== menuItems.length - 1 ? 'border-b border-border/50' : ''
                 }`}>
                   <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
                     <Icon className="w-5 h-5 text-muted-foreground" />
@@ -134,7 +142,7 @@ const Profile = () => {
         </div>
 
         {/* Progress Summary */}
-        <div className="bg-card rounded-3xl p-6 shadow-card border border-border">
+        <div className="bg-card/50 backdrop-blur-sm rounded-3xl p-6 shadow-card border border-border/50">
           <h3 className="font-semibold text-lg mb-4">Your Progress Summary</h3>
           {loading ? (
             <div className="space-y-4">
@@ -145,24 +153,36 @@ const Profile = () => {
             </div>
           ) : (
             <div className="space-y-4">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-sm text-muted-foreground">Weight Unit</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={toggleUnit}
+                  className="rounded-full h-8 px-3"
+                >
+                  <Scale className="w-3 h-3 mr-1" />
+                  {unit === 'lbs' ? 'lbs' : 'kg'}
+                </Button>
+              </div>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Starting Weight</span>
-                <span className="font-semibold">{profile?.startingWeight ? `${profile.startingWeight} lbs` : 'Not set'}</span>
+                <span className="font-semibold">{profile?.startingWeight ? formatWeight(profile.startingWeight) : 'Not set'}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Current Weight</span>
-                <span className="font-semibold">{profile?.currentWeight ? `${profile.currentWeight} lbs` : 'Not set'}</span>
+                <span className="font-semibold">{profile?.currentWeight ? formatWeight(profile.currentWeight) : 'Not set'}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Goal Weight</span>
-                <span className="font-semibold">{profile?.goalWeight ? `${profile.goalWeight} lbs` : 'Not set'}</span>
+                <span className="font-semibold">{profile?.goalWeight ? formatWeight(profile.goalWeight) : 'Not set'}</span>
               </div>
               {profile?.startingWeight && profile?.currentWeight && (
                 <div className="pt-4 border-t border-border">
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Total Lost</span>
                     <span className="font-bold text-primary text-xl">
-                      {profile.startingWeight - profile.currentWeight} lbs
+                      {formatWeight(profile.startingWeight - profile.currentWeight)}
                     </span>
                   </div>
                 </div>

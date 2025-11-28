@@ -1,13 +1,4 @@
-import {
-  collection,
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-  serverTimestamp,
-  increment,
-} from 'firebase/firestore';
-import { db } from './firebase';
+import { api } from './api';
 
 export interface UserProfile {
   uid: string;
@@ -25,10 +16,12 @@ export interface UserProfile {
   startingWeight?: number;
   currentWeight?: number;
   goalWeight?: number;
+  height?: number;
   dailyWaterGoal: number;
-  dailyMealGoal: number;
+  dailyCalorieGoal?: number;
+  dailyMealGoal?: number;
   // Preferences
-  notifications: {
+  notifications?: {
     dailyReminder: boolean;
     weeklyCheckIn: boolean;
     mealReminder: boolean;
@@ -48,13 +41,17 @@ export interface UserProfile {
   };
   fcmToken?: string; // Firebase Cloud Messaging token
   theme: 'light' | 'dark' | 'system';
+  // User preferences and settings
+  country?: string; // User's country for localized content
+  tutorialCompleted?: boolean;
+  fastingProtocol?: string;
+  fastingStartTime?: string | Date;
   // Timestamps
-  createdAt?: unknown;
-  updatedAt?: unknown;
-  lastCheckInDate?: unknown;
+  createdAt?: string;
+  updatedAt?: string;
+  lastCheckInDate?: string;
+  setupCompleted?: boolean;
 }
-
-const USERS_COLLECTION = 'users';
 
 export async function createUserProfile(
   uid: string,
@@ -62,52 +59,70 @@ export async function createUserProfile(
   displayName: string,
   photoURL?: string
 ): Promise<void> {
-  const userProfile: UserProfile = {
-    uid,
-    email,
-    displayName,
-    photoURL,
-    bio: '',
-    currentStreak: 0,
-    longestStreak: 0,
-    totalEntries: 0,
-    totalMeals: 0,
-    totalWaterGlasses: 0,
-    dailyWaterGoal: 8,
-    dailyMealGoal: 4,
-    notifications: {
-      dailyReminder: true,
-      weeklyCheckIn: true,
-      mealReminder: true,
-      achievements: true,
-      communityActivity: true,
-    },
-    theme: 'system',
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  };
-
-  await setDoc(doc(db, USERS_COLLECTION, uid), userProfile);
+  try {
+    await api.users.create({
+      id: uid,
+      email,
+      displayName,
+      photoURL,
+    });
+  } catch (error: any) {
+    // User might already exist, that's okay
+    if (error?.response?.status !== 409) {
+      throw error;
+    }
+  }
 }
 
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
-  const userDoc = await getDoc(doc(db, USERS_COLLECTION, uid));
-  
-  if (userDoc.exists()) {
-    return userDoc.data() as UserProfile;
+  try {
+    const response = await api.users.getProfile();
+    const profile = response.data;
+    
+    // Map backend profile to frontend format
+    return {
+      uid,
+      displayName: profile.displayName || '',
+      email: profile.email || '',
+      photoURL: profile.photoURL,
+      bio: profile.bio,
+      currentStreak: profile.currentStreak || 0,
+      longestStreak: profile.longestStreak || 0,
+      totalEntries: profile.totalEntries || 0,
+      totalMeals: profile.totalMeals || 0,
+      totalWaterGlasses: profile.totalWaterGlasses || 0,
+      startingWeight: profile.startingWeight ? Number(profile.startingWeight) : undefined,
+      currentWeight: profile.currentWeight ? Number(profile.currentWeight) : undefined,
+      goalWeight: profile.goalWeight ? Number(profile.goalWeight) : undefined,
+      height: profile.height ? Number(profile.height) : undefined,
+      dailyWaterGoal: profile.dailyWaterGoal ? Number(profile.dailyWaterGoal) : 8,
+      dailyCalorieGoal: profile.dailyCalorieGoal ? Number(profile.dailyCalorieGoal) : undefined,
+      notifications: profile.notifications || {
+        dailyReminder: true,
+        weeklyCheckIn: true,
+        mealReminder: true,
+        achievements: true,
+        communityActivity: true,
+      },
+      theme: profile.theme || 'system',
+      tutorialCompleted: profile.tutorialCompleted || false,
+      fastingProtocol: profile.fastingProtocol || '16:8',
+      fastingStartTime: profile.fastingStartTime,
+      createdAt: profile.createdAt,
+      updatedAt: profile.updatedAt,
+      setupCompleted: profile.setupCompleted,
+    };
+  } catch (error) {
+    console.error('Error getting user profile:', error);
+    return null;
   }
-  
-  return null;
 }
 
 export async function updateUserProfile(
   uid: string,
   updates: Partial<UserProfile>
 ): Promise<void> {
-  await updateDoc(doc(db, USERS_COLLECTION, uid), {
-    ...updates,
-    updatedAt: serverTimestamp(),
-  });
+  await api.users.updateProfile(updates);
 }
 
 export async function incrementUserStats(
@@ -115,47 +130,15 @@ export async function incrementUserStats(
   stat: 'totalEntries' | 'totalMeals' | 'totalWaterGlasses',
   amount = 1
 ): Promise<void> {
-  await updateDoc(doc(db, USERS_COLLECTION, uid), {
-    [stat]: increment(amount),
-    updatedAt: serverTimestamp(),
-  });
+  // This will be handled by the backend automatically when logging meals/water
+  console.log(`Stats update: ${stat} +${amount} (handled by backend)`);
 }
 
 export async function updateStreak(uid: string, currentDate: Date): Promise<void> {
-  const profile = await getUserProfile(uid);
-  
-  if (!profile) return;
-
-  const lastCheckIn = profile.lastCheckInDate 
-    ? new Date((profile.lastCheckInDate as { toDate: () => Date }).toDate()) 
-    : null;
-  
-  let newStreak = profile.currentStreak;
-  
-  if (lastCheckIn) {
-    const daysDiff = Math.floor(
-      (currentDate.getTime() - lastCheckIn.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    
-    if (daysDiff === 1) {
-      // Consecutive day
-      newStreak += 1;
-    } else if (daysDiff > 1) {
-      // Streak broken
-      newStreak = 1;
-    }
-    // If daysDiff === 0, same day, no change
-  } else {
-    // First check-in
-    newStreak = 1;
+  // This will be handled by the backend streak service
+  try {
+    await api.streaks.checkIn('daily');
+  } catch (error) {
+    console.error('Error updating streak:', error);
   }
-
-  const longestStreak = Math.max(profile.longestStreak, newStreak);
-
-  await updateDoc(doc(db, USERS_COLLECTION, uid), {
-    currentStreak: newStreak,
-    longestStreak,
-    lastCheckInDate: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
 }

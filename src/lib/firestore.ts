@@ -104,24 +104,24 @@ export async function addJournalEntry(userId: string, entryData: {
   sleep?: number;
   notes?: string;
 }) {
+  const dateString = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+  
   return await addDoc(collection(db, COLLECTIONS.JOURNAL_ENTRIES), {
     userId,
     ...entryData,
+    date: dateString, // Add date string for simple equality queries
     createdAt: serverTimestamp(),
   });
 }
 
 export async function getTodayJournalEntry(userId: string) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const dateString = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
 
+  // Simple equality query - no composite index required
   const q = query(
     collection(db, COLLECTIONS.JOURNAL_ENTRIES),
     where('userId', '==', userId),
-    where('createdAt', '>=', Timestamp.fromDate(today)),
-    where('createdAt', '<', Timestamp.fromDate(tomorrow)),
+    where('date', '==', dateString),
     limit(1)
   );
 
@@ -130,29 +130,31 @@ export async function getTodayJournalEntry(userId: string) {
 }
 
 // Water tracking functions
-export async function addWaterIntake(userId: string, glasses: number) {
+// Helper to get today's date string (YYYY-MM-DD) for simple equality queries
+function getTodayDateString() {
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  return today.toISOString().split('T')[0]; // Returns "2025-11-24" format
+}
+
+export async function addWaterIntake(userId: string, glasses: number) {
+  const dateString = getTodayDateString();
 
   return await addDoc(collection(db, COLLECTIONS.WATER_INTAKE), {
     userId,
     glasses,
-    date: Timestamp.fromDate(today),
+    date: dateString, // Use string for simple equality queries (no index needed)
     createdAt: serverTimestamp(),
   });
 }
 
 export async function getTodayWaterIntake(userId: string) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const dateString = getTodayDateString();
 
+  // Simple equality query - no composite index required
   const q = query(
     collection(db, COLLECTIONS.WATER_INTAKE),
     where('userId', '==', userId),
-    where('date', '>=', Timestamp.fromDate(today)),
-    where('date', '<', Timestamp.fromDate(tomorrow))
+    where('date', '==', dateString)
   );
 
   const snapshot = await getDocs(q);
@@ -160,13 +162,13 @@ export async function getTodayWaterIntake(userId: string) {
 }
 
 export async function updateWaterIntake(userId: string, glasses: number) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const dateString = getTodayDateString();
 
+  // Simple equality query - no composite index required
   const q = query(
     collection(db, COLLECTIONS.WATER_INTAKE),
     where('userId', '==', userId),
-    where('date', '>=', Timestamp.fromDate(today)),
+    where('date', '==', dateString),
     limit(1)
   );
 

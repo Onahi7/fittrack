@@ -61,14 +61,23 @@ const Community = () => {
       {/* Quick Actions */}
       <div className="px-6 mb-8">
         <div className="grid grid-cols-2 gap-4">
-          <Link to="/community/feed">
-            <div className="bg-gradient-primary rounded-3xl p-6 shadow-glow text-center">
+          <Link to="/buddies">
+            <div className="bg-gradient-primary rounded-3xl p-6 shadow-glow text-center hover:scale-105 transition-transform">
               <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <Users className="w-6 h-6 text-white" />
+              </div>
+              <p className="text-white font-semibold">Find Buddies</p>
+            </div>
+          </Link>
+
+          <Link to="/community/feed">
+            <div className="bg-card rounded-3xl p-6 shadow-card border border-border text-center hover:border-primary transition-smooth">
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
                 </svg>
               </div>
-              <p className="text-white font-semibold">Social Feed</p>
+              <p className="font-semibold">Social Feed</p>
             </div>
           </Link>
 

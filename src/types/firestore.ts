@@ -34,4 +34,27 @@ export interface UserProfile {
   displayName: string;
   email: string;
   createdAt?: any;
+  
+  // Profile data
+  startingWeight?: number;
+  currentWeight?: number;
+  goalWeight?: number;
+  height?: number;
+  dailyCalorieGoal?: number;
+  dailyWaterGoal?: number;
+  setupCompleted?: boolean;
+  
+  // Notification preferences
+  notifications?: {
+    dailyReminder?: boolean;
+    weeklyCheckIn?: boolean;
+    mealReminder?: boolean;
+    achievements?: boolean;
+    communityActivity?: boolean;
+  };
+  
+  // User preferences and settings
+  tutorialCompleted?: boolean;
+  fastingProtocol?: string;
+  fastingStartTime?: string | Date;
 }
