@@ -49,28 +49,36 @@ export interface Group {
   createdAt?: unknown;
 }
 
-// Groups - placeholder implementations (backend endpoints needed)
+// Groups - using real backend endpoints
 export async function createGroup(userId: string, groupData: Omit<Group, 'id' | 'creatorId' | 'memberIds' | 'memberCount' | 'createdAt'>) {
-  console.warn('Groups feature not yet implemented in backend');
-  return { id: 'placeholder' };
+  const response = await api.groups.create({
+    name: groupData.name,
+    description: groupData.description,
+    category: groupData.category,
+    imageUrl: groupData.imageUrl,
+    isPrivate: groupData.isPrivate,
+  });
+  return response.data;
 }
 
 export async function joinGroup(groupId: string, userId: string) {
-  console.warn('Groups feature not yet implemented in backend');
+  const response = await api.groups.join(parseInt(groupId));
+  return response.data;
 }
 
 export async function leaveGroup(groupId: string, userId: string) {
-  console.warn('Groups feature not yet implemented in backend');
+  const response = await api.groups.leave(parseInt(groupId));
+  return response.data;
 }
 
 export async function getGroups(category?: string) {
-  console.warn('Groups feature not yet implemented in backend');
-  return [];
+  const response = await api.groups.getAll();
+  return response.data;
 }
 
 export async function getUserGroups(userId: string) {
-  console.warn('Groups feature not yet implemented in backend');
-  return [];
+  const response = await api.groups.getUserGroups();
+  return response.data;
 }
 
 // ==================== POSTS ====================
@@ -89,28 +97,33 @@ export interface Post {
   createdAt?: unknown;
 }
 
-// Posts - placeholder implementations (backend endpoints needed)
+// Posts - using real backend endpoints
 export async function createPost(postData: Omit<Post, 'id' | 'likes' | 'commentCount' | 'createdAt'>) {
-  console.warn('Posts feature not yet implemented in backend');
-  return { id: 'placeholder' };
+  const response = await api.posts.create({
+    content: postData.content,
+    imageUrl: postData.imageUrl,
+  });
+  return response.data;
 }
 
 export async function getFeedPosts(userId: string, limitCount = 20) {
-  console.warn('Posts feature not yet implemented in backend');
-  return [];
+  const response = await api.posts.getAll(limitCount);
+  return response.data;
 }
 
 export async function getGroupPosts(groupId: string) {
-  console.warn('Posts feature not yet implemented in backend');
-  return [];
+  const response = await api.posts.getAll();
+  return response.data;
 }
 
 export async function likePost(postId: string, userId: string) {
-  console.warn('Posts feature not yet implemented in backend');
+  const response = await api.posts.like(parseInt(postId));
+  return response.data;
 }
 
 export async function deletePost(postId: string) {
-  console.warn('Posts feature not yet implemented in backend');
+  const response = await api.posts.delete(parseInt(postId));
+  return response.data;
 }
 
 // ==================== CHALLENGES ====================
@@ -130,33 +143,43 @@ export interface Challenge {
   createdAt?: unknown;
 }
 
-// Challenges - placeholder implementations (backend endpoints needed)
+// Challenges - using real backend endpoints
 export async function createChallenge(userId: string, challengeData: Omit<Challenge, 'id' | 'creatorId' | 'participantCount' | 'createdAt'>) {
-  console.warn('Challenges feature not yet implemented in backend');
-  return { id: 'placeholder' };
+  const response = await api.challenges.create({
+    name: challengeData.name,
+    description: challengeData.description,
+    type: challengeData.type,
+    goal: challengeData.goal,
+    duration: challengeData.duration,
+    startDate: new Date(challengeData.startDate as any).toISOString(),
+    imageUrl: challengeData.imageUrl,
+  });
+  return response.data;
 }
 
 export async function joinChallenge(challengeId: string, userId: string) {
-  console.warn('Challenges feature not yet implemented in backend');
+  const response = await api.challenges.join(parseInt(challengeId));
+  return response.data;
 }
 
 export async function updateChallengeProgress(challengeId: string, userId: string, progress: number) {
-  console.warn('Challenges feature not yet implemented in backend');
+  const response = await api.challenges.updateProgress(parseInt(challengeId), progress);
+  return response.data;
 }
 
 export async function getActiveChallenges() {
-  console.warn('Challenges feature not yet implemented in backend');
-  return [];
+  const response = await api.challenges.getAll();
+  return response.data;
 }
 
 export async function getUserChallenges(userId: string) {
-  console.warn('Challenges feature not yet implemented in backend');
-  return [];
+  const response = await api.challenges.getUserChallenges();
+  return response.data;
 }
 
 export async function getChallengeLeaderboard(challengeId: string) {
-  console.warn('Challenges feature not yet implemented in backend');
-  return [];
+  const response = await api.challenges.getLeaderboard(parseInt(challengeId));
+  return response.data;
 }
 
 // ==================== FRIENDSHIPS (Using Buddies API) ====================

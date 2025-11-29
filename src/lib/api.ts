@@ -30,6 +30,7 @@ export const api = {
     getProfile: () => apiClient.get('/users/me/profile'),
     updateProfile: (data: any) => apiClient.put('/users/me/profile', data),
     deleteAccount: () => apiClient.delete('/users/me'),
+    exportData: () => apiClient.get('/users/me/export'),
   },
 
   // Meals
@@ -46,6 +47,7 @@ export const api = {
   streaks: {
     getAll: () => apiClient.get('/streaks'),
     checkIn: (type: string) => apiClient.post('/streaks/checkin', { type }),
+    useFreeze: (type: string) => apiClient.post('/streaks/freeze', { type }),
   },
 
   // Journal
@@ -62,6 +64,62 @@ export const api = {
     log: (glasses: number, date: string) =>
       apiClient.post('/water', { glasses, date }),
     getByDate: (date: string) => apiClient.get('/water', { params: { date } }),
+  },
+
+  // Posts
+  posts: {
+    create: (data: { content: string; imageUrl?: string }) =>
+      apiClient.post('/posts', data),
+    getAll: (limit?: number, offset?: number) =>
+      apiClient.get('/posts', { params: { limit, offset } }),
+    getById: (id: number) => apiClient.get(`/posts/${id}`),
+    getByUser: (userId: string, limit?: number, offset?: number) =>
+      apiClient.get(`/posts/user/${userId}`, { params: { limit, offset } }),
+    like: (id: number) => apiClient.post(`/posts/${id}/like`),
+    addComment: (id: number, content: string) =>
+      apiClient.post(`/posts/${id}/comment`, { content }),
+    getComments: (id: number) => apiClient.get(`/posts/${id}/comments`),
+    delete: (id: number) => apiClient.delete(`/posts/${id}`),
+  },
+
+  // Challenges
+  challenges: {
+    create: (data: {
+      name: string;
+      description: string;
+      type: string;
+      goal: number;
+      duration: number;
+      startDate: string;
+      imageUrl?: string;
+    }) => apiClient.post('/challenges', data),
+    getAll: (limit?: number, offset?: number) =>
+      apiClient.get('/challenges', { params: { limit, offset } }),
+    getById: (id: number) => apiClient.get(`/challenges/${id}`),
+    getUserChallenges: () => apiClient.get('/challenges/my-challenges'),
+    join: (id: number) => apiClient.post(`/challenges/${id}/join`),
+    updateProgress: (id: number, progress: number) =>
+      apiClient.put(`/challenges/${id}/progress`, { progress }),
+    getLeaderboard: (id: number) =>
+      apiClient.get(`/challenges/${id}/leaderboard`),
+  },
+
+  // Groups
+  groups: {
+    create: (data: {
+      name: string;
+      description: string;
+      category: string;
+      imageUrl?: string;
+      isPrivate?: boolean;
+    }) => apiClient.post('/groups', data),
+    getAll: (limit?: number, offset?: number) =>
+      apiClient.get('/groups', { params: { limit, offset } }),
+    getById: (id: number) => apiClient.get(`/groups/${id}`),
+    getUserGroups: () => apiClient.get('/groups/my-groups'),
+    join: (id: number) => apiClient.post(`/groups/${id}/join`),
+    leave: (id: number) => apiClient.delete(`/groups/${id}/leave`),
+    getMembers: (id: number) => apiClient.get(`/groups/${id}/members`),
   },
 };
 
