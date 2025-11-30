@@ -16,6 +16,7 @@ import AdminLogin from "@/admin/pages/AdminLogin";
 import AdminDashboard from "@/admin/pages/AdminDashboard";
 import UsersManagement from "@/admin/pages/UsersManagement";
 import SubscriptionsManagement from "@/admin/pages/SubscriptionsManagement";
+import ChallengesManagement from "@/admin/pages/ChallengesManagement";
 import Home from "./pages/Home";
 import Journal from "./pages/Journal";
 import LogMeal from "./pages/LogMeal";
@@ -87,6 +88,7 @@ function AnimatedRoutes() {
             <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
             <Route path="/community/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
             <Route path="/community/challenges" element={<ProtectedRoute><Challenges /></ProtectedRoute>} />
+            <Route path="/challenges" element={<ProtectedRoute><Challenges /></ProtectedRoute>} />
             <Route path="/community/groups" element={<ProtectedRoute><Groups /></ProtectedRoute>} />
             <Route path="/community/friends" element={<ProtectedRoute><Friends /></ProtectedRoute>} />
             
@@ -120,6 +122,7 @@ const App = () => (
                     <Route path="dashboard" element={<AdminDashboard />} />
                     <Route path="users" element={<UsersManagement />} />
                     <Route path="subscriptions" element={<SubscriptionsManagement />} />
+                    <Route path="challenges" element={<ChallengesManagement />} />
                     <Route path="meals" element={<div className="p-6">Meals Management - Coming Soon</div>} />
                     <Route path="journal" element={<div className="p-6">Journal Management - Coming Soon</div>} />
                     <Route path="water" element={<div className="p-6">Water Tracking - Coming Soon</div>} />

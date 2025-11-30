@@ -100,6 +100,10 @@ export const api = {
     join: (id: number) => apiClient.post(`/challenges/${id}/join`),
     updateProgress: (id: number, progress: number) =>
       apiClient.put(`/challenges/${id}/progress`, { progress }),
+    syncProgress: (id: number, date?: string) =>
+      apiClient.post(`/challenges/${id}/sync`, { date }),
+    getProgress: (id: number) =>
+      apiClient.get(`/challenges/${id}/progress`),
     getLeaderboard: (id: number) =>
       apiClient.get(`/challenges/${id}/leaderboard`),
   },
@@ -120,6 +124,22 @@ export const api = {
     join: (id: number) => apiClient.post(`/groups/${id}/join`),
     leave: (id: number) => apiClient.delete(`/groups/${id}/leave`),
     getMembers: (id: number) => apiClient.get(`/groups/${id}/members`),
+  },
+
+  // Progress Photos
+  photos: {
+    create: (data: {
+      url: string;
+      cloudinaryPublicId: string;
+      date: string;
+      visibility?: 'private' | 'buddy' | 'community';
+      notes?: string;
+      weight?: number;
+      bodyFat?: number;
+    }) => apiClient.post('/photos', data),
+    getAll: () => apiClient.get('/photos'),
+    getById: (id: number) => apiClient.get(`/photos/${id}`),
+    delete: (id: number) => apiClient.delete(`/photos/${id}`),
   },
 };
 

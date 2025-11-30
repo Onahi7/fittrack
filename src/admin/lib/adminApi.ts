@@ -23,10 +23,11 @@ adminApi.interceptors.request.use((config) => {
 export const adminApiService = {
   // Auth
   auth: {
-    login: (credentials: { email: string; password: string }) =>
-      adminApi.post('/admin/login', credentials),
-    logout: () => adminApi.post('/admin/logout'),
-    getProfile: () => adminApi.get('/admin/profile'),
+    login: (idToken: string) =>
+      adminApi.post('/users/admin/login', { idToken }),
+    logout: () => Promise.resolve(),
+    getProfile: (idToken: string) =>
+      adminApi.post('/users/admin/login', { idToken }),
   },
 
   // Users Management
@@ -88,6 +89,27 @@ export const adminApiService = {
     getTransactions: (page: number = 1, limit: number = 50) =>
       adminApi.get('/subscriptions/admin/transactions', { params: { page, limit } }),
   },
+
+  // Challenges Management
+  challenges: {
+    getAll: (params?: { page?: number; limit?: number }) =>
+      adminApi.get('/challenges', { params }),
+    getById: (id: number) => adminApi.get(`/challenges/${id}`),
+    create: (data: {
+      name: string;
+      description: string;
+      type: string;
+      goal: number;
+      duration: number;
+      startDate: string;
+      imageUrl?: string;
+    }) => adminApi.post('/challenges/admin', data),
+    update: (id: number, data: any) => adminApi.put(`/challenges/${id}`, data),
+    delete: (id: number) => adminApi.delete(`/challenges/${id}`),
+    getStats: () => adminApi.get('/challenges/admin/stats'),
+    getLeaderboard: (id: number) => adminApi.get(`/challenges/${id}/leaderboard`),
+    getParticipants: (id: number) => adminApi.get(`/challenges/${id}/participants`),
+  },
 };
 
 // Simplified exports for convenience
@@ -121,4 +143,20 @@ export default {
     adminApiService.subscriptions.getStats().then(res => res.data),
   getAllTransactions: (page?: number, limit?: number) =>
     adminApiService.subscriptions.getTransactions(page, limit).then(res => res.data),
+  
+  // Challenges
+  getAllChallenges: (params?: any) =>
+    adminApiService.challenges.getAll(params).then(res => res.data),
+  getChallengeById: (id: number) =>
+    adminApiService.challenges.getById(id).then(res => res.data),
+  createChallenge: (data: any) =>
+    adminApiService.challenges.create(data).then(res => res.data),
+  updateChallenge: (id: number, data: any) =>
+    adminApiService.challenges.update(id, data).then(res => res.data),
+  deleteChallenge: (id: number) =>
+    adminApiService.challenges.delete(id).then(res => res.data),
+  getChallengeStats: () =>
+    adminApiService.challenges.getStats().then(res => res.data),
+  getChallengeLeaderboard: (id: number) =>
+    adminApiService.challenges.getLeaderboard(id).then(res => res.data),
 };

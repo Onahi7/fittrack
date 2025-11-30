@@ -36,7 +36,7 @@ const Setup = () => {
         try {
           const profile = await getUserProfile(currentUser.uid);
           // If profile exists and has setup data (weight goals), redirect to home
-          if (profile && profile.startingWeight && profile.goalWeight) {
+          if (profile && (profile.setupCompleted || (profile.startingWeight && profile.goalWeight))) {
             navigate("/", { replace: true });
             return;
           }
@@ -86,6 +86,8 @@ const Setup = () => {
           startingWeight: parseFloat(currentWeight),
           currentWeight: parseFloat(currentWeight),
           goalWeight: parseFloat(targetWeight),
+          height: heightFeet && heightInches ? (parseFloat(heightFeet) * 12) + parseFloat(heightInches || '0') : undefined,
+          setupCompleted: true,
         });
       } else {
         // Create new profile
@@ -102,6 +104,8 @@ const Setup = () => {
           startingWeight: parseFloat(currentWeight),
           currentWeight: parseFloat(currentWeight),
           goalWeight: parseFloat(targetWeight),
+          height: heightFeet && heightInches ? (parseFloat(heightFeet) * 12) + parseFloat(heightInches || '0') : undefined,
+          setupCompleted: true,
         });
       }
 
@@ -110,7 +114,17 @@ const Setup = () => {
         description: "Your profile has been created successfully.",
       });
       
-      navigate("/");
+      // Wait a moment for the backend to process, then verify profile before navigating
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Verify the profile was updated successfully
+      const updatedProfile = await getUserProfile(currentUser.uid);
+      if (updatedProfile && (updatedProfile.setupCompleted || (updatedProfile.startingWeight && updatedProfile.goalWeight))) {
+        navigate("/", { replace: true });
+      } else {
+        // Fallback navigation if verification fails
+        setTimeout(() => navigate("/", { replace: true }), 1000);
+      }
     } catch (error) {
       console.error("Error saving profile:", error);
       toast({

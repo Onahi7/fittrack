@@ -14,7 +14,7 @@ class GeminiService {
   async generateDailyScripture(): Promise<GeminiResponse> {
     try {
       console.log('[Gemini] Generating daily scripture...');
-      const prompt = `Provide a short Bible verse from the Amplified Bible (AMP) that encourages:
+      const prompt = `Provide ONE single Bible verse from the Amplified Bible (AMP) that encourages:
 - Consistency and discipline
 - Spiritual growth
 - Taking care of one's body (temple of God)
@@ -25,11 +25,18 @@ Format the response as:
 
 Example: "So, whether you eat or drink, or whatever you do, do all to the glory of God." - 1 Corinthians 10:31 (AMP)
 
-Provide ONLY the verse and reference, nothing else. Make sure it's from the Amplified Bible version.`;
+IMPORTANT: Provide ONLY ONE verse and reference, nothing else. Make sure it's from the Amplified Bible version. Do not provide multiple verses.`;
 
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
-      const text = response.text().trim();
+      let text = response.text().trim();
+
+      // Ensure we only get one scripture by taking the first complete verse if multiple are returned
+      const versePattern = /"[^"]*" - [^"\n]+\(AMP\)/;
+      const match = text.match(versePattern);
+      if (match) {
+        text = match[0];
+      }
 
       return { text, success: true };
     } catch (error: unknown) {
@@ -158,17 +165,43 @@ Example: "What made you feel strong and capable today?"`;
     try {
       const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
       
-      const prompt = `Analyze this food image and provide nutritional estimates in JSON format:
+      const prompt = `You are an expert nutritionist analyzing this food image. Provide detailed nutritional analysis.
+
+ANALYSIS STEPS:
+1. Identify each food item visible in the image
+2. Estimate portion sizes using visual cues (plate size, utensils, hand comparison)
+3. Consider cooking methods that affect nutritional content
+4. Account for added oils, sauces, or seasonings visible
+
+Provide response in this exact JSON format:
 {
-  "name": "meal name",
-  "estimatedCalories": number,
-  "protein": number (grams),
-  "carbs": number (grams),
-  "fats": number (grams),
-  "description": "brief description"
+  "name": "descriptive meal name",
+  "confidence": "high|medium|low",
+  "items": [
+    {
+      "food": "specific food item",
+      "portion": "estimated portion with unit",
+      "calories": number
+    }
+  ],
+  "nutrition": {
+    "calories": number,
+    "protein": number,
+    "carbs": number,
+    "fats": number,
+    "fiber": number,
+    "sugar": number,
+    "sodium": number
+  },
+  "healthScore": number (1-10),
+  "insights": [
+    "brief nutritional insight 1",
+    "brief nutritional insight 2"
+  ],
+  "improvements": "suggestion for healthier version"
 }
 
-Return ONLY valid JSON, nothing else.`;
+Be conservative with calorie estimates. Consider hidden ingredients like oils and sauces. Return ONLY valid JSON.`;
 
       const imageParts = [
         {
@@ -187,7 +220,7 @@ Return ONLY valid JSON, nothing else.`;
     } catch (error: unknown) {
       console.error('Gemini API error:', error);
       return {
-        text: '{"error": "Unable to analyze image"}',
+        text: '{"name": "Unknown meal", "confidence": "low", "nutrition": {"calories": 0, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "sugar": 0, "sodium": 0}, "healthScore": 5, "insights": ["Unable to analyze image"], "improvements": "Try taking a clearer photo"}',
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
       };

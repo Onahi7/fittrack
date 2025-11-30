@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   CreditCard,
+  Trophy,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -21,6 +22,7 @@ const sidebarItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
   { icon: Users, label: 'Users', path: '/admin/users' },
   { icon: CreditCard, label: 'Subscriptions', path: '/admin/subscriptions' },
+  { icon: Trophy, label: 'Challenges', path: '/admin/challenges' },
   { icon: UtensilsCrossed, label: 'Meals', path: '/admin/meals' },
   { icon: BookOpen, label: 'Journal Entries', path: '/admin/journal' },
   { icon: Droplet, label: 'Water Tracking', path: '/admin/water' },

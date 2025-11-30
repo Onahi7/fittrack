@@ -14,9 +14,15 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login, loginWithGoogle } = useAuth();
+  const authContext = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Debug: Log the auth context to see what's available
+  console.log('Auth context:', authContext);
+  console.log('loginWithGoogle type:', typeof authContext.loginWithGoogle);
+
+  const { login, loginWithGoogle } = authContext;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +38,7 @@ const Login = () => {
       // Check if user has completed setup
       if (result && result.user) {
         const profile = await getUserProfile(result.user.uid);
-        if (profile && profile.startingWeight && profile.goalWeight) {
+        if (profile && (profile.setupCompleted || (profile.startingWeight && profile.goalWeight))) {
           navigate("/");
         } else {
           navigate("/setup");
@@ -64,7 +70,7 @@ const Login = () => {
       // Check if user has completed setup
       if (result) {
         const profile = await getUserProfile(result.user.uid);
-        if (profile && profile.startingWeight && profile.goalWeight) {
+        if (profile && (profile.setupCompleted || (profile.startingWeight && profile.goalWeight))) {
           navigate("/");
         } else {
           navigate("/setup");

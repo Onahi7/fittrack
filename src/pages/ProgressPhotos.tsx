@@ -24,45 +24,13 @@ import {
 } from "@/components/ui/select";
 import { PageTransition } from '@/components/animations/PageTransition';
 import { motion } from "framer-motion";
-
-interface ProgressPhoto {
-  id: string;
-  url: string;
-  date: Date;
-  weight?: number;
-  notes?: string;
-  visibility: 'private' | 'buddy' | 'community';
-}
+import { useProgressPhotos } from '@/hooks/useProgressPhotos';
+import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 
 const ProgressPhotos = () => {
   const { toast } = useToast();
   const { formatWeight, unit } = useWeightUnit();
-  const [photos, setPhotos] = useState<ProgressPhoto[]>([
-    {
-      id: '1',
-      url: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400',
-      date: new Date('2024-09-01'),
-      weight: 185,
-      notes: 'Starting my journey!',
-      visibility: 'private'
-    },
-    {
-      id: '2',
-      url: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400',
-      date: new Date('2024-10-01'),
-      weight: 175,
-      notes: 'One month progress - feeling great!',
-      visibility: 'buddy'
-    },
-    {
-      id: '3',
-      url: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400',
-      date: new Date('2024-11-01'),
-      weight: 170,
-      notes: 'Two months in - seeing real changes!',
-      visibility: 'private'
-    }
-  ]);
+  const { photos, loading, error, createPhoto, deletePhoto } = useProgressPhotos();
 
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string>('');
@@ -81,7 +49,7 @@ const ProgressPhotos = () => {
     }
   };
 
-  const handleSavePhoto = () => {
+  const handleSavePhoto = async () => {
     if (!selectedImage) {
       toast({
         title: "No image selected",
@@ -91,26 +59,35 @@ const ProgressPhotos = () => {
       return;
     }
 
-    const newPhoto: ProgressPhoto = {
-      id: Date.now().toString(),
-      url: selectedImage,
-      date: new Date(),
-      weight: uploadWeight ? parseFloat(uploadWeight) : undefined,
-      notes: uploadNotes,
-      visibility: uploadVisibility,
-    };
+    try {
+      // For now, we'll use the base64 image as URL and generate a dummy cloudinary ID
+      // In a real app, you'd upload to Cloudinary first and get the URL and public ID
+      await createPhoto({
+        url: selectedImage,
+        cloudinaryPublicId: `progress_${Date.now()}`,
+        date: new Date().toISOString(),
+        weight: uploadWeight ? parseFloat(uploadWeight) : undefined,
+        notes: uploadNotes || undefined,
+        visibility: uploadVisibility,
+      });
 
-    setPhotos([newPhoto, ...photos]);
-    setUploadDialogOpen(false);
-    setSelectedImage('');
-    setUploadWeight('');
-    setUploadNotes('');
-    setUploadVisibility('private');
+      setUploadDialogOpen(false);
+      setSelectedImage('');
+      setUploadWeight('');
+      setUploadNotes('');
+      setUploadVisibility('private');
 
-    toast({
-      title: "Photo uploaded!",
-      description: "Your progress photo has been saved",
-    });
+      toast({
+        title: "Photo uploaded!",
+        description: "Your progress photo has been saved",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Upload failed",
+        description: error.message || "Failed to save your photo. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const startingPhoto = photos[photos.length - 1];
@@ -118,6 +95,25 @@ const ProgressPhotos = () => {
   const weightLoss = startingPhoto?.weight && latestPhoto?.weight
     ? startingPhoto.weight - latestPhoto.weight
     : 0;
+
+  // Show loading skeleton while fetching photos
+  if (loading) {
+    return (
+      <PageTransition>
+        <div className="min-h-screen bg-background pb-8">
+          <div className="px-6 pt-8 pb-6">
+            <LoadingSkeleton className="w-8 h-8 rounded-lg mb-4" />
+            <LoadingSkeleton className="w-48 h-8 rounded-lg mb-2" />
+            <LoadingSkeleton className="w-32 h-4 rounded-lg" />
+          </div>
+          <div className="px-6 space-y-6">
+            <LoadingSkeleton className="w-full h-64 rounded-3xl" />
+            <LoadingSkeleton className="w-full h-96 rounded-3xl" />
+          </div>
+        </div>
+      </PageTransition>
+    );
+  }
 
   return (
     <PageTransition>
@@ -275,7 +271,7 @@ const ProgressPhotos = () => {
                   </div>
                   <div className="mt-2">
                     <p className="text-sm font-semibold">
-                      {startingPhoto.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      {new Date(startingPhoto.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </p>
                   </div>
                 </div>
@@ -295,7 +291,7 @@ const ProgressPhotos = () => {
                   </div>
                   <div className="mt-2">
                     <p className="text-sm font-semibold">
-                      {latestPhoto.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      {new Date(latestPhoto.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </p>
                   </div>
                 </div>
@@ -369,7 +365,7 @@ const ProgressPhotos = () => {
                         <div className="flex items-start justify-between mb-2">
                           <div>
                             <p className="font-semibold font-heading">
-                              {photo.date.toLocaleDateString('en-US', { 
+                              {new Date(photo.date).toLocaleDateString('en-US', { 
                                 month: 'long', 
                                 day: 'numeric', 
                                 year: 'numeric' 

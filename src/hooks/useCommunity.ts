@@ -117,29 +117,29 @@ export function useChallenges() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
+  const fetchChallenges = async () => {
     if (!currentUser) {
       setLoading(false);
       return;
     }
 
-    const fetchChallenges = async () => {
-      try {
-        setLoading(true);
-        const activeChallenges = await getActiveChallenges();
-        setChallenges(activeChallenges as Challenge[]);
-        setError(null);
-      } catch (err) {
-        setError(err as Error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    try {
+      setLoading(true);
+      const activeChallenges = await getActiveChallenges();
+      setChallenges(activeChallenges as Challenge[]);
+      setError(null);
+    } catch (err) {
+      setError(err as Error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchChallenges();
   }, [currentUser]);
 
-  return { challenges, loading, error };
+  return { challenges, loading, error, refetch: fetchChallenges };
 }
 
 // Hook to manage user's challenges
@@ -149,31 +149,31 @@ export function useUserChallenges() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
+  const fetchUserChallenges = async () => {
     if (!currentUser) {
       setLoading(false);
       return;
     }
 
-    const fetchUserChallenges = async () => {
-      try {
-        setLoading(true);
-        const userChallenges = await getUserChallenges(currentUser.uid);
-        setChallenges(userChallenges as Challenge[]);
-        setError(null);
-      } catch (err) {
-        // Silently handle - challenges not yet implemented
-        setChallenges([]);
-        setError(null);
-      } finally {
-        setLoading(false);
-      }
-    };
+    try {
+      setLoading(true);
+      const userChallenges = await getUserChallenges(currentUser.uid);
+      setChallenges(userChallenges as Challenge[]);
+      setError(null);
+    } catch (err) {
+      // Silently handle - challenges not yet implemented
+      setChallenges([]);
+      setError(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchUserChallenges();
   }, [currentUser]);
 
-  return { challenges, loading, error };
+  return { challenges, loading, error, refetch: fetchUserChallenges };
 }
 
 interface LeaderboardEntry {

@@ -38,8 +38,10 @@ const Home = () => {
   const [runTutorial, setRunTutorial] = useState(false);
   const [dailyScripture, setDailyScripture] = useState<string | null>(null);
   const [scriptureLoading, setScriptureLoading] = useState(false);
+  const [scriptureGenerated, setScriptureGenerated] = useState(false);
   const [nutritionTip, setNutritionTip] = useState<string | null>(null);
   const [tipLoading, setTipLoading] = useState(false);
+  const [tipGenerated, setTipGenerated] = useState(false);
   const [userCountry, setUserCountry] = useState<string | null>(null);
   const fallbackQuote = useMemo(() => getDailyQuote(), []);
   const dailyTip = useMemo(() => getDailyTip(), []);
@@ -73,9 +75,11 @@ const Home = () => {
     checkTutorial();
   }, [currentUser]);
 
-  // Generate daily scripture on mount
+  // Generate daily scripture on mount (only once per session)
   useEffect(() => {
     const generateScripture = async () => {
+      if (scriptureGenerated) return;
+      
       // Check if we have a cached scripture for today
       const cachedScripture = localStorage.getItem('dailyScripture');
       const cachedDate = localStorage.getItem('dailyScriptureDate');
@@ -83,28 +87,37 @@ const Home = () => {
 
       if (cachedScripture && cachedDate === today) {
         setDailyScripture(cachedScripture);
+        setScriptureGenerated(true);
         return;
       }
 
-      setScriptureLoading(true);
-      const response = await geminiService.generateDailyScripture();
+      try {
+        setScriptureLoading(true);
+        setScriptureGenerated(true);
+        const response = await geminiService.generateDailyScripture();
 
-      if (response.success) {
-        setDailyScripture(response.text);
-        localStorage.setItem('dailyScripture', response.text);
-        localStorage.setItem('dailyScriptureDate', today);
+        if (response.success) {
+          setDailyScripture(response.text);
+          localStorage.setItem('dailyScripture', response.text);
+          localStorage.setItem('dailyScriptureDate', today);
+        }
+      } catch (error) {
+        console.error('Failed to generate scripture:', error);
+      } finally {
+        setScriptureLoading(false);
       }
-      setScriptureLoading(false);
     };
 
-    if (currentUser) {
+    if (currentUser && !scriptureGenerated) {
       generateScripture();
     }
-  }, [currentUser]);
+  }, [currentUser, scriptureGenerated]);
 
-  // Generate personalized nutrition tip based on country
+  // Generate personalized nutrition tip based on country (only once per session)
   useEffect(() => {
     const generateTip = async () => {
+      if (tipGenerated) return;
+      
       // Check if we have a cached tip for today
       const cachedTip = localStorage.getItem('dailyNutritionTip');
       const cachedDate = localStorage.getItem('dailyNutritionTipDate');
@@ -112,26 +125,33 @@ const Home = () => {
 
       if (cachedTip && cachedDate === today) {
         setNutritionTip(cachedTip);
+        setTipGenerated(true);
         return;
       }
 
-      setTipLoading(true);
-      const response = await geminiService.generateNutritionTip({
-        country: userCountry || undefined,
-      });
+      try {
+        setTipLoading(true);
+        setTipGenerated(true);
+        const response = await geminiService.generateNutritionTip({
+          country: userCountry || undefined,
+        });
 
-      if (response.success) {
-        setNutritionTip(response.text);
-        localStorage.setItem('dailyNutritionTip', response.text);
-        localStorage.setItem('dailyNutritionTipDate', today);
+        if (response.success) {
+          setNutritionTip(response.text);
+          localStorage.setItem('dailyNutritionTip', response.text);
+          localStorage.setItem('dailyNutritionTipDate', today);
+        }
+      } catch (error) {
+        console.error('Failed to generate nutrition tip:', error);
+      } finally {
+        setTipLoading(false);
       }
-      setTipLoading(false);
     };
 
-    if (currentUser) {
+    if (currentUser && !tipGenerated) {
       generateTip();
     }
-  }, [currentUser, userCountry]);
+  }, [currentUser, userCountry, tipGenerated]);
   
   const handleTutorialComplete = async () => {
     setRunTutorial(false);
@@ -218,23 +238,25 @@ const Home = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-gradient-primary rounded-3xl p-6 shadow-glow mb-4 hover:shadow-xl transition-all duration-300"
+          className="bg-gradient-to-br from-primary to-primary/80 rounded-3xl p-4 shadow-glow mb-4 hover:shadow-xl transition-all duration-300 w-full"
         >
-          <div className="flex items-start gap-3 mb-3">
-            <Sparkles className="w-6 h-6 text-primary-foreground mt-1 animate-pulse" />
-            <div className="flex-1">
-              <p className="text-primary-foreground/90 text-sm font-medium mb-1">Daily Scripture</p>
+          <div className="flex items-start gap-3">
+            <Sparkles className="w-5 h-5 text-white mt-0.5 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-white/90 text-sm font-medium mb-2">Daily Scripture</p>
               {scriptureLoading ? (
                 <div className="space-y-2">
-                  <div className="h-5 bg-white/20 rounded animate-pulse"></div>
-                  <div className="h-5 bg-white/20 rounded animate-pulse w-4/5"></div>
+                  <div className="h-4 bg-white/20 rounded animate-pulse"></div>
+                  <div className="h-4 bg-white/20 rounded animate-pulse w-4/5"></div>
                 </div>
               ) : (
                 <>
-                  <p className="text-primary-foreground text-lg leading-relaxed animate-in fade-in duration-700">
-                    {dailyScripture || '\"Do you not know that your body is a temple of the Holy Spirit who is within you, whom you have [received as a gift] from God, and that you are not your own [property]?\" - 1 Corinthians 6:19 (AMP)'}
-                  </p>
-                  <p className="text-primary-foreground/70 text-xs mt-3 flex items-center gap-1">
+                  <div className="bg-white/10 rounded-2xl p-3 backdrop-blur-sm">
+                    <p className="text-white text-sm leading-6 break-words whitespace-normal font-medium">
+                      {dailyScripture || '\"Do you not know that your body is a temple of the Holy Spirit who is within you, whom you have [received as a gift] from God, and that you are not your own [property]?\" - 1 Corinthians 6:19 (AMP)'}
+                    </p>
+                  </div>
+                  <p className="text-white/80 text-xs mt-2 flex items-center gap-1">
                     <Sparkles className="h-3 w-3" />
                     Amplified Bible (AMP)
                   </p>

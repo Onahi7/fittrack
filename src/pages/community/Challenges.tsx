@@ -3,19 +3,112 @@ import { ArrowLeft, Trophy, Users, Calendar, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useChallenges, useUserChallenges } from "@/hooks/useCommunity";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { PageTransition } from '@/components/animations/PageTransition';
 import BottomNav from '@/components/BottomNav';
+import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { createChallenge } from "@/lib/community";
+import { useToast } from "@/hooks/use-toast";
 
 const Challenges = () => {
-  const { challenges: allChallenges, loading: allLoading } = useChallenges();
-  const { challenges: userChallenges, loading: userLoading } = useUserChallenges();
+  const { challenges: allChallenges, loading: allLoading, refetch: refetchAll } = useChallenges();
+  const { challenges: userChallenges, loading: userLoading, refetch: refetchUser } = useUserChallenges();
+  const { currentUser } = useAuth();
+  const { toast } = useToast();
+  
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    type: "custom",
+    goal: "",
+    duration: "",
+    startDate: new Date().toISOString().split('T')[0],
+  });
   
   const activeChallenges = userChallenges;
   const upcomingChallenges = allChallenges.filter((c) => 
     !userChallenges.some((uc) => uc.id === c.id)
   );
+
+  const handleCreateChallenge = async () => {
+    if (!currentUser) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to create a challenge",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.name || !formData.description || !formData.goal || !formData.duration) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      await createChallenge(currentUser.uid, {
+        name: formData.name,
+        description: formData.description,
+        type: formData.type,
+        goal: parseInt(formData.goal),
+        duration: parseInt(formData.duration),
+        startDate: formData.startDate,
+      });
+
+      toast({
+        title: "Success!",
+        description: "Challenge created successfully",
+      });
+
+      setCreateDialogOpen(false);
+      setFormData({
+        name: "",
+        description: "",
+        type: "custom",
+        goal: "",
+        duration: "",
+        startDate: new Date().toISOString().split('T')[0],
+      });
+
+      // Refresh challenges
+      refetchAll();
+      refetchUser();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create challenge. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   return (
     <PageTransition>
@@ -37,10 +130,118 @@ const Challenges = () => {
             <div className="flex-1">
               <h1 className="text-2xl font-bold font-heading">Challenges</h1>
             </div>
-            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl shadow-glow">
-              <Plus className="w-4 h-4 mr-2" />
-              Create
-            </Button>
+            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl shadow-glow">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="font-heading text-2xl">Create Challenge</DialogTitle>
+                  <DialogDescription>
+                    Create a new challenge and invite others to join you!
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Challenge Name *</Label>
+                    <Input
+                      id="name"
+                      placeholder="e.g., 30-Day Water Challenge"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Description *</Label>
+                    <Input
+                      id="description"
+                      placeholder="Describe your challenge..."
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="type">Challenge Type</Label>
+                    <Select
+                      value={formData.type}
+                      onValueChange={(value) => setFormData({ ...formData, type: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="water">💧 Water Intake</SelectItem>
+                        <SelectItem value="meals">🍱 Meal Tracking</SelectItem>
+                        <SelectItem value="streak">🔥 Daily Streak</SelectItem>
+                        <SelectItem value="custom">🎯 Custom Goal</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="goal">Goal *</Label>
+                      <Input
+                        id="goal"
+                        type="number"
+                        placeholder="e.g., 8"
+                        value={formData.goal}
+                        onChange={(e) => setFormData({ ...formData, goal: e.target.value })}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {formData.type === 'water' ? 'Glasses per day' : 
+                         formData.type === 'meals' ? 'Meals per day' : 
+                         formData.type === 'streak' ? 'Days to maintain' : 'Target number'}
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="duration">Duration (days) *</Label>
+                      <Input
+                        id="duration"
+                        type="number"
+                        placeholder="e.g., 30"
+                        value={formData.duration}
+                        onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="startDate">Start Date *</Label>
+                    <Input
+                      id="startDate"
+                      type="date"
+                      value={formData.startDate}
+                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setCreateDialogOpen(false)}
+                    className="flex-1 rounded-2xl"
+                    disabled={isCreating}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleCreateChallenge}
+                    className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl shadow-glow"
+                    disabled={isCreating}
+                  >
+                    {isCreating ? "Creating..." : "Create Challenge"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
@@ -97,9 +298,17 @@ const Challenges = () => {
                         Leaderboard
                       </Button>
                       <Button className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl shadow-glow">
-                        Update Progress
+                        {challenge.type === 'custom' ? 'Update Progress' : 'View Details'}
                       </Button>
                     </div>
+                    
+                    {/* Auto-sync indicator for fitness challenges */}
+                    {challenge.type !== 'custom' && (
+                      <div className="mt-3 text-xs text-muted-foreground flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                        Auto-syncing from your {challenge.type} logs
+                      </div>
+                    )}
                   </div>
                 );
               })
@@ -165,7 +374,11 @@ const Challenges = () => {
               <p className="text-white/80 text-sm mb-4 relative z-10">
                 Start a challenge and invite friends to join you!
               </p>
-              <Button variant="secondary" className="rounded-2xl relative z-10">
+              <Button 
+                variant="secondary" 
+                className="rounded-2xl relative z-10"
+                onClick={() => setCreateDialogOpen(true)}
+              >
                 Create Challenge
               </Button>
             </div>

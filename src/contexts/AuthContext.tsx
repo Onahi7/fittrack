@@ -21,7 +21,7 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<import('firebase/auth').UserCredential>;
 }
 
-const AuthContext = createContext<AuthContextType>({} as AuthContextType);
+const AuthContext = createContext<AuthContextType | null>(null);
 
 export function useAuth() {
   const context = useContext(AuthContext);

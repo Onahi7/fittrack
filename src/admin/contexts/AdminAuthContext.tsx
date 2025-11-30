@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { adminApiService } from '../lib/adminApi';
+import { auth } from '@/lib/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 interface AdminUser {
   id: string;
@@ -28,9 +30,9 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     if (token) {
       // Verify token and get admin profile
       adminApiService.auth
-        .getProfile()
+        .getProfile(token)
         .then((response) => {
-          setAdmin(response.data);
+          setAdmin(response.data.admin);
         })
         .catch(() => {
           localStorage.removeItem('admin_token');
@@ -45,7 +47,12 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await adminApiService.auth.login({ email, password });
+      // Sign in with Firebase
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const idToken = await userCredential.user.getIdToken();
+      
+      // Verify admin role with backend
+      const response = await adminApiService.auth.login(idToken);
       const { token, admin: adminUser } = response.data;
       
       localStorage.setItem('admin_token', token);
