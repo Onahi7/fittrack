@@ -50,6 +50,7 @@ const Buddies = () => {
   const [suggestedBuddies, setSuggestedBuddies] = useState<any[]>([]);
 
   useEffect(() => {
+    console.log('[Buddies] Component mounted, currentUser:', currentUser?.uid);
     if (currentUser) {
       fetchBuddies();
       fetchRequests();
@@ -82,12 +83,16 @@ const Buddies = () => {
 
   const fetchRequests = async () => {
     try {
+      console.log('[Buddies] Fetching pending requests...');
       const token = await currentUser?.getIdToken();
+      console.log('[Buddies] Token obtained:', token ? 'Yes' : 'No');
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/buddies/requests/pending`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      console.log('[Buddies] Response status:', response.status);
       if (response.ok) {
         const data = await response.json();
+        console.log('[Buddies] Pending requests data:', data);
         setRequests(data.map((r: any) => ({
           id: r.id.toString(),
           name: r.user.displayName || 'User',
@@ -96,6 +101,8 @@ const Buddies = () => {
           weightLoss: 0,
           message: 'Wants to be accountability partners!'
         })));
+      } else {
+        console.error('[Buddies] Failed to fetch requests:', await response.text());
       }
     } catch (error) {
       console.error('Error fetching requests:', error);
@@ -151,11 +158,10 @@ const Buddies = () => {
     }
   };
 
-  const handleRejectRequest = async () => {
-    if (!requestToReject) return;
+  const handleRejectRequest = async (id: string) => {
     try {
       const token = await currentUser?.getIdToken();
-      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/buddies/requests/${requestToReject.id}`, {
+      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/buddies/requests/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -163,7 +169,6 @@ const Buddies = () => {
         title: "Request Declined",
         description: "The buddy request has been declined",
       });
-      setRequestToReject(null);
       fetchRequests();
     } catch (error) {
       toast({
@@ -171,7 +176,6 @@ const Buddies = () => {
         description: "Failed to decline request",
         variant: "destructive",
       });
-      setRequestToReject(null);
     }
   };
 

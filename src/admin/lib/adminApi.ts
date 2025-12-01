@@ -93,7 +93,7 @@ export const adminApiService = {
   // Challenges Management
   challenges: {
     getAll: (params?: { page?: number; limit?: number }) =>
-      adminApi.get('/challenges', { params }),
+      adminApi.get('/challenges/admin/all', { params }),
     getById: (id: number) => adminApi.get(`/challenges/${id}`),
     create: (data: {
       name: string;
