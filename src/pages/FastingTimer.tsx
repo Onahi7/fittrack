@@ -44,12 +44,8 @@ const FastingTimer = () => {
         setSelectedPlan(plan);
       }
     }
-    // Mock history data
-    setHistory([
-      { date: 'Today', duration: '16h 05m', plan: '16:8', status: 'completed' },
-      { date: 'Yesterday', duration: '15h 55m', plan: '16:8', status: 'completed' },
-      { date: '2 days ago', duration: '16h 10m', plan: '16:8', status: 'completed' },
-    ]);
+    // Set empty history - will need real API integration
+    setHistory([]);
   }, []);
 
   // Timer logic
@@ -101,13 +97,13 @@ const FastingTimer = () => {
         description: `You fasted for ${formatTime(elapsedTime)}`,
       });
       
-      // Add to history (mock)
-      setHistory(prev => [{
-        date: 'Just now',
-        duration: formatTime(elapsedTime),
-        plan: selectedPlan.name,
-        status: 'completed'
-      }, ...prev]);
+      // Add to history - will need proper backend integration
+      // setHistory(prev => [{
+      //   date: 'Just now',
+      //   duration: formatTime(elapsedTime),
+      //   plan: selectedPlan.name,
+      //   status: 'completed'
+      // }, ...prev]);
     } else {
       // Start fast
       const now = new Date();

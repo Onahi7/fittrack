@@ -267,6 +267,48 @@ Return ONLY valid JSON, nothing else.`;
       };
     }
   }
+
+  async estimateFoodCalories(params: {
+    foodName: string;
+    portion: string;
+  }): Promise<GeminiResponse> {
+    try {
+      const prompt = `You are a nutrition expert. Estimate the nutritional content for:
+Food: ${params.foodName}
+Portion: ${params.portion}
+
+IMPORTANT INSTRUCTIONS:
+1. Use standard nutritional databases (USDA, etc.) for accuracy
+2. Consider the portion size carefully
+3. Be realistic with estimates
+4. Account for typical preparation methods
+
+Provide response in this exact JSON format:
+{
+  "estimatedCalories": number,
+  "protein": number (in grams),
+  "carbs": number (in grams),
+  "fats": number (in grams),
+  "confidence": "high|medium|low",
+  "reasoning": "brief explanation of estimate"
+}
+
+Return ONLY valid JSON, nothing else.`;
+
+      const result = await this.model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text().trim();
+
+      return { text, success: true };
+    } catch (error: unknown) {
+      console.error('Gemini API error:', error);
+      return {
+        text: '{"estimatedCalories": 200, "protein": 12, "carbs": 25, "fats": 7, "confidence": "low", "reasoning": "Default estimate due to API error"}',
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
 }
 
 export const geminiService = new GeminiService();

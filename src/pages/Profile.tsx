@@ -1,5 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, User, Bell, Shield, HelpCircle, LogOut, ChevronRight, Trophy, Zap, Scale } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -40,7 +51,7 @@ const Profile = () => {
   ];
 
   const menuItems = [
-    { icon: User, label: "Edit Profile", to: "/setup" },
+    { icon: User, label: "Edit Profile", to: "/profile/edit" },
     { icon: Bell, label: "Notifications", to: "/profile/notifications" },
     { icon: Shield, label: "Privacy & Security", to: "/profile/privacy" },
     { icon: HelpCircle, label: "Help & Support", to: "/profile/help" },

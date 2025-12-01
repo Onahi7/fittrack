@@ -109,6 +109,28 @@ export const adminApiService = {
     getStats: () => adminApi.get('/challenges/admin/stats'),
     getLeaderboard: (id: number) => adminApi.get(`/challenges/${id}/leaderboard`),
     getParticipants: (id: number) => adminApi.get(`/challenges/${id}/participants`),
+    
+    // Daily Task Management
+    createDailyTask: (challengeId: number, data: {
+      taskType: string;
+      title: string;
+      description?: string;
+      targetValue?: number;
+      targetUnit?: string;
+      exerciseType?: string;
+      mealType?: string;
+      fastingType?: string;
+      isRequired?: boolean;
+      points?: number;
+      taskDate?: string;
+      dayOfChallenge?: number;
+    }) => adminApi.post(`/challenges/${challengeId}/daily-task`, data),
+    getDailyTaskEngagement: (challengeId: number, date?: string) =>
+      adminApi.get(`/challenges/${challengeId}/engagement`, { params: { date } }),
+    getTaskCompletionDetails: (taskId: number) =>
+      adminApi.get(`/challenges/task/${taskId}/details`),
+    updateTaskEngagement: (taskId: number) =>
+      adminApi.put(`/challenges/task/${taskId}/engagement`),
   },
 };
 

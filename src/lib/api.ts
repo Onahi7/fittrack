@@ -93,6 +93,21 @@ export const api = {
       startDate: string;
       imageUrl?: string;
     }) => apiClient.post('/challenges', data),
+    createAdminChallenge: (data: {
+      name: string;
+      description: string;
+      type: string;
+      goal: number;
+      duration: number;
+      startDate: string;
+      imageUrl?: string;
+      isPremiumChallenge?: boolean;
+      requiresSubscription?: boolean;
+      subscriptionTier?: string;
+      gift30Days?: boolean;
+      hasDynamicTasks?: boolean;
+      dailyTasks?: any[];
+    }) => apiClient.post('/challenges/admin', data),
     getAll: (limit?: number, offset?: number) =>
       apiClient.get('/challenges', { params: { limit, offset } }),
     getById: (id: number) => apiClient.get(`/challenges/${id}`),
@@ -106,6 +121,17 @@ export const api = {
       apiClient.get(`/challenges/${id}/progress`),
     getLeaderboard: (id: number) =>
       apiClient.get(`/challenges/${id}/leaderboard`),
+    getPremiumBanners: () => apiClient.get('/challenges/premium-banners'),
+    dismissBanner: (id: number) => apiClient.post(`/challenges/${id}/dismiss-banner`),
+    trackSession: () => apiClient.post('/challenges/track-session'),
+    getTasks: (challengeId: number, day?: number) =>
+      apiClient.get(`/challenges/${challengeId}/tasks`, { params: { day } }),
+    completeTask: (challengeId: number, taskId: number, data: { actualValue?: number; notes?: string }) =>
+      apiClient.post(`/challenges/${challengeId}/tasks/${taskId}/complete`, data),
+    getMyCompletions: (challengeId: number, date?: string) =>
+      apiClient.get(`/challenges/${challengeId}/my-completions`, { params: { date } }),
+    activateFasting: (challengeId: number, fastingType: string) =>
+      apiClient.post(`/challenges/${challengeId}/activate-fasting`, { fastingType }),
   },
 
   // Groups
@@ -140,6 +166,15 @@ export const api = {
     getAll: () => apiClient.get('/photos'),
     getById: (id: number) => apiClient.get(`/photos/${id}`),
     delete: (id: number) => apiClient.delete(`/photos/${id}`),
+  },
+
+  // Notifications
+  notifications: {
+    subscribe: (data: any) => apiClient.post('/notifications/subscribe', data),
+    unsubscribe: (data: any) => apiClient.delete('/notifications/unsubscribe', { data }),
+    test: () => apiClient.post('/notifications/test'),
+    getPreferences: () => apiClient.get('/notifications/preferences'),
+    updatePreferences: (data: any) => apiClient.put('/notifications/preferences', data),
   },
 };
 

@@ -16,6 +16,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -25,32 +35,124 @@ import {
 import { PageTransition } from '@/components/animations/PageTransition';
 import { motion } from "framer-motion";
 import { useProgressPhotos } from '@/hooks/useProgressPhotos';
-import { LoadingSkeleton } from '@/components/LoadingSkeleton';
+import { Skeleton } from '@/components/ui/skeleton';
+import { uploadProgressPhoto, isCloudinaryConfigured } from '@/lib/cloudinary';
+import { useAuth } from '@/contexts/AuthContext';
 
 const ProgressPhotos = () => {
   const { toast } = useToast();
   const { formatWeight, unit } = useWeightUnit();
   const { photos, loading, error, createPhoto, deletePhoto } = useProgressPhotos();
+  const { currentUser } = useAuth();
 
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string>('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadWeight, setUploadWeight] = useState('');
   const [uploadNotes, setUploadNotes] = useState('');
   const [uploadVisibility, setUploadVisibility] = useState<'private' | 'buddy' | 'community'>('private');
+  const [photoToDelete, setPhotoToDelete] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const compressImage = (file: File, maxSizeMB: number = 1): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          // Maximum dimensions
+          const MAX_WIDTH = 1920;
+          const MAX_HEIGHT = 1920;
+          
+          // Resize if necessary
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height = (height * MAX_WIDTH) / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width = (width * MAX_HEIGHT) / height;
+              height = MAX_HEIGHT;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Failed to get canvas context'));
+            return;
+          }
+          
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Start with high quality and reduce if needed
+          let quality = 0.8;
+          let compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          
+          // Reduce quality until size is acceptable
+          while (compressedDataUrl.length > maxSizeMB * 1024 * 1024 * 1.37 && quality > 0.1) {
+            quality -= 0.1;
+            compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          }
+          
+          resolve(compressedDataUrl);
+        };
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setSelectedImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      // Store the original file for uploading to Cloudinary
+      setSelectedFile(file);
+      
+      try {
+        // Show loading toast
+        toast({
+          title: "Processing image...",
+          description: "Preparing your photo for preview",
+        });
+        
+        // Create compressed preview for display only
+        const compressedImage = await compressImage(file, 2); // Max 2MB
+        setSelectedImage(compressedImage);
+        
+        toast({
+          title: "Image ready!",
+          description: "Your photo is ready for upload",
+        });
+      } catch (error) {
+        console.error('Error processing image:', error);
+        toast({
+          title: "Processing failed",
+          description: "Using original image for preview",
+          variant: "destructive",
+        });
+        
+        // Fallback to original image preview
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setSelectedImage(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 
   const handleSavePhoto = async () => {
-    if (!selectedImage) {
+    if (!selectedFile) {
       toast({
         title: "No image selected",
         description: "Please select an image to upload",
@@ -59,27 +161,46 @@ const ProgressPhotos = () => {
       return;
     }
 
+    if (!isCloudinaryConfigured()) {
+      toast({
+        title: "Cloudinary not configured",
+        description: "Please add your Cloudinary credentials to .env file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploading(true);
     try {
-      // For now, we'll use the base64 image as URL and generate a dummy cloudinary ID
-      // In a real app, you'd upload to Cloudinary first and get the URL and public ID
+      toast({
+        title: "Uploading...",
+        description: "Uploading your photo to Cloudinary",
+      });
+
+      // Upload the original file to Cloudinary
+      const { url, publicId } = await uploadProgressPhoto(selectedFile, currentUser?.uid);
+
+      // Save photo metadata to backend
       await createPhoto({
-        url: selectedImage,
-        cloudinaryPublicId: `progress_${Date.now()}`,
+        url,
+        cloudinaryPublicId: publicId,
         date: new Date().toISOString(),
         weight: uploadWeight ? parseFloat(uploadWeight) : undefined,
         notes: uploadNotes || undefined,
         visibility: uploadVisibility,
       });
 
+      // Reset form
       setUploadDialogOpen(false);
       setSelectedImage('');
+      setSelectedFile(null);
       setUploadWeight('');
       setUploadNotes('');
       setUploadVisibility('private');
 
       toast({
         title: "Photo uploaded!",
-        description: "Your progress photo has been saved",
+        description: "Your progress photo has been saved successfully",
       });
     } catch (error: any) {
       toast({
@@ -87,13 +208,16 @@ const ProgressPhotos = () => {
         description: error.message || "Failed to save your photo. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setUploading(false);
     }
   };
 
   const startingPhoto = photos[photos.length - 1];
   const latestPhoto = photos[0];
   const weightLoss = startingPhoto?.weight && latestPhoto?.weight
-    ? startingPhoto.weight - latestPhoto.weight
+    ? (typeof startingPhoto.weight === 'string' ? parseFloat(startingPhoto.weight) : startingPhoto.weight) - 
+      (typeof latestPhoto.weight === 'string' ? parseFloat(latestPhoto.weight) : latestPhoto.weight)
     : 0;
 
   // Show loading skeleton while fetching photos
@@ -102,13 +226,13 @@ const ProgressPhotos = () => {
       <PageTransition>
         <div className="min-h-screen bg-background pb-8">
           <div className="px-6 pt-8 pb-6">
-            <LoadingSkeleton className="w-8 h-8 rounded-lg mb-4" />
-            <LoadingSkeleton className="w-48 h-8 rounded-lg mb-2" />
-            <LoadingSkeleton className="w-32 h-4 rounded-lg" />
+            <Skeleton className="w-8 h-8 rounded-lg mb-4" />
+            <Skeleton className="w-48 h-8 rounded-lg mb-2" />
+            <Skeleton className="w-32 h-4 rounded-lg" />
           </div>
           <div className="px-6 space-y-6">
-            <LoadingSkeleton className="w-full h-64 rounded-3xl" />
-            <LoadingSkeleton className="w-full h-96 rounded-3xl" />
+            <Skeleton className="w-full h-64 rounded-3xl" />
+            <Skeleton className="w-full h-96 rounded-3xl" />
           </div>
         </div>
       </PageTransition>
@@ -167,7 +291,10 @@ const ProgressPhotos = () => {
                             variant="destructive"
                             size="icon"
                             className="absolute top-2 right-2 rounded-full shadow-sm"
-                            onClick={() => setSelectedImage('')}
+                            onClick={() => {
+                              setSelectedImage('');
+                              setSelectedFile(null);
+                            }}
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -235,9 +362,17 @@ const ProgressPhotos = () => {
 
                   <Button
                     onClick={handleSavePhoto}
-                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl h-12 shadow-glow"
+                    disabled={uploading || !selectedFile}
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl h-12 shadow-glow disabled:opacity-50"
                   >
-                    Save Photo
+                    {uploading ? (
+                      <>
+                        <div className="w-4 h-4 mr-2 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      'Save Photo'
+                    )}
                   </Button>
                 </div>
               </DialogContent>

@@ -7,8 +7,8 @@ export interface ProgressPhoto {
   url: string;
   cloudinaryPublicId: string;
   date: string;
-  weight?: number;
-  bodyFat?: number;
+  weight?: number | string;
+  bodyFat?: number | string;
   notes?: string;
   visibility: 'private' | 'buddy' | 'community';
   createdAt: string;

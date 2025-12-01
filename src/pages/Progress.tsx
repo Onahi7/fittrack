@@ -13,6 +13,10 @@ import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { WeightChart } from "@/components/charts/WeightChart";
+import { ActivityChart } from "@/components/charts/ActivityChart";
+import { useWeightData } from "@/hooks/useWeightData";
+import { useActivityData } from "@/hooks/useActivityData";
 
 const Progress = () => {
   const { profile, loading: profileLoading } = useUserProfile();
@@ -22,6 +26,10 @@ const Progress = () => {
   const { toast } = useToast();
   const [selectedTimeframe, setSelectedTimeframe] = useState('3M');
   const timeframes = ['1M', '3M', '6M', '1Y'];
+  
+  // Fetch chart data
+  const { weightData, loading: weightLoading, goalWeight } = useWeightData(selectedTimeframe);
+  const { activityData, loading: activityLoading, summaryStats } = useActivityData(selectedTimeframe);
   
   // Calculate actual stats from meals data
   const todayCalories = useMemo(() => {
@@ -133,7 +141,7 @@ const Progress = () => {
     });
   };
   
-  const isLoading = profileLoading || mealsLoading;
+  const isLoading = profileLoading || mealsLoading || weightLoading || activityLoading;
 
   return (
     <PageTransition>
@@ -272,18 +280,13 @@ const Progress = () => {
                     )}
                   </div>
                   
-                  {/* Weight Chart - Coming Soon */}
-                  <div className="h-48 flex items-center justify-center bg-secondary/20 rounded-2xl border border-dashed border-border">
-                    <div className="text-center p-4">
-                      <TrendingDown className="w-8 h-8 mx-auto mb-3 text-muted-foreground/50" />
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Weight tracking chart coming soon!
-                      </p>
-                      <p className="text-xs text-muted-foreground/70 mt-1">
-                        Track your weight regularly in your profile
-                      </p>
-                    </div>
-                  </div>
+                  {/* Weight Chart */}
+                  <WeightChart 
+                    data={weightData}
+                    goalWeight={goalWeight}
+                    timeframe={selectedTimeframe}
+                    className=""
+                  />
                 </motion.div>
               ) : (
                 <div className="bg-card/50 backdrop-blur-sm rounded-3xl p-8 shadow-sm border border-border/50 text-center">
@@ -300,30 +303,34 @@ const Progress = () => {
                 </div>
               )}
 
-              {/* Weekly Activity Chart - Coming Soon */}
+              {/* Activity Trends Chart */}
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
                 className="bg-card/50 backdrop-blur-sm rounded-3xl p-6 shadow-sm border border-border/50"
               >
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-orange-500/10 rounded-xl flex items-center justify-center">
-                    <Activity className="w-5 h-5 text-orange-500" />
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-orange-500/10 rounded-xl flex items-center justify-center">
+                      <Activity className="w-5 h-5 text-orange-500" />
+                    </div>
+                    <h2 className="text-lg font-semibold font-heading">Activity Trends</h2>
                   </div>
-                  <h2 className="text-lg font-semibold font-heading">Activity Trends</h2>
+                  {summaryStats.streak > 0 && (
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground">Current Streak</p>
+                      <p className="text-sm font-semibold text-orange-600">
+                        {summaryStats.streak} {summaryStats.streak === 1 ? 'day' : 'days'}
+                      </p>
+                    </div>
+                  )}
                 </div>
-                <div className="h-48 flex items-center justify-center bg-secondary/20 rounded-2xl border border-dashed border-border">
-                  <div className="text-center p-4">
-                    <Activity className="w-8 h-8 mx-auto mb-3 text-muted-foreground/50" />
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Activity tracking chart coming soon!
-                    </p>
-                    <p className="text-xs text-muted-foreground/70 mt-1">
-                      Your daily habits will be visualized here
-                    </p>
-                  </div>
-                </div>
+                <ActivityChart 
+                  data={activityData}
+                  timeframe={selectedTimeframe}
+                  className=""
+                />
               </motion.div>
 
               {/* Health Stats */}
@@ -339,29 +346,29 @@ const Progress = () => {
                       <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center mb-3">
                         <Calendar className="w-4 h-4 text-primary" />
                       </div>
-                      <p className="text-xs text-muted-foreground mb-1">Total Entries</p>
-                      <p className="text-2xl font-bold font-heading">{profile.totalEntries}</p>
+                      <p className="text-xs text-muted-foreground mb-1">Active Days</p>
+                      <p className="text-2xl font-bold font-heading">{summaryStats.activeDays}</p>
                     </div>
                     <div className="bg-card/50 backdrop-blur-sm rounded-3xl p-5 shadow-sm border border-border/50">
                       <div className="w-8 h-8 bg-orange-500/10 rounded-lg flex items-center justify-center mb-3">
                         <Activity className="w-4 h-4 text-orange-500" />
                       </div>
                       <p className="text-xs text-muted-foreground mb-1">Total Meals</p>
-                      <p className="text-2xl font-bold font-heading">{profile.totalMeals}</p>
+                      <p className="text-2xl font-bold font-heading">{summaryStats.totalMeals}</p>
                     </div>
                     <div className="bg-card/50 backdrop-blur-sm rounded-3xl p-5 shadow-sm border border-border/50">
                       <div className="w-8 h-8 bg-cyan-500/10 rounded-lg flex items-center justify-center mb-3">
                         <Droplets className="w-4 h-4 text-cyan-500" />
                       </div>
                       <p className="text-xs text-muted-foreground mb-1">Water Glasses</p>
-                      <p className="text-2xl font-bold font-heading">{profile.totalWaterGlasses}</p>
+                      <p className="text-2xl font-bold font-heading">{summaryStats.totalWaterGlasses}</p>
                     </div>
                     <div className="bg-card/50 backdrop-blur-sm rounded-3xl p-5 shadow-sm border border-border/50">
                       <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center mb-3">
                         <TrendingUp className="w-4 h-4 text-green-500" />
                       </div>
-                      <p className="text-xs text-muted-foreground mb-1">Longest Streak</p>
-                      <p className="text-2xl font-bold font-heading">{profile.longestStreak} <span className="text-sm font-normal text-muted-foreground">days</span></p>
+                      <p className="text-xs text-muted-foreground mb-1">Avg Performance</p>
+                      <p className="text-2xl font-bold font-heading">{Math.round(summaryStats.averageCompletionRate)}<span className="text-sm font-normal text-muted-foreground">%</span></p>
                     </div>
                   </div>
                 </motion.div>

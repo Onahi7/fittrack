@@ -151,10 +151,11 @@ const Buddies = () => {
     }
   };
 
-  const handleRejectRequest = async (id: string) => {
+  const handleRejectRequest = async () => {
+    if (!requestToReject) return;
     try {
       const token = await currentUser?.getIdToken();
-      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/buddies/requests/${id}`, {
+      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/buddies/requests/${requestToReject.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -162,6 +163,7 @@ const Buddies = () => {
         title: "Request Declined",
         description: "The buddy request has been declined",
       });
+      setRequestToReject(null);
       fetchRequests();
     } catch (error) {
       toast({
@@ -169,6 +171,7 @@ const Buddies = () => {
         description: "Failed to decline request",
         variant: "destructive",
       });
+      setRequestToReject(null);
     }
   };
 

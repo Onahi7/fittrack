@@ -42,57 +42,7 @@ const MealPlanner = () => {
     { id: "keto", label: "Keto", emoji: "🥑" },
   ];
 
-  // Sample recipes (in production, this would come from AI/API)
-  const sampleRecipes: Recipe[] = [
-    {
-      id: "1",
-      name: "Grilled Chicken & Quinoa Bowl",
-      image: "🍗",
-      calories: 450,
-      protein: 40,
-      carbs: 35,
-      fats: 15,
-      prepTime: 25,
-      difficulty: "Easy",
-      tags: ["High Protein", "Balanced"],
-    },
-    {
-      id: "2",
-      name: "Salmon with Roasted Vegetables",
-      image: "🐟",
-      calories: 520,
-      protein: 38,
-      carbs: 28,
-      fats: 28,
-      prepTime: 30,
-      difficulty: "Medium",
-      tags: ["Healthy Fats", "Omega-3"],
-    },
-    {
-      id: "3",
-      name: "Greek Yogurt Parfait",
-      image: "🥣",
-      calories: 280,
-      protein: 20,
-      carbs: 35,
-      fats: 8,
-      prepTime: 5,
-      difficulty: "Easy",
-      tags: ["Breakfast", "Quick"],
-    },
-    {
-      id: "4",
-      name: "Turkey & Avocado Wrap",
-      image: "🌯",
-      calories: 420,
-      protein: 32,
-      carbs: 38,
-      fats: 18,
-      prepTime: 10,
-      difficulty: "Easy",
-      tags: ["Lunch", "Quick"],
-    },
-  ];
+
 
   const generateMealPlan = async () => {
     setGenerating(true);
@@ -142,32 +92,26 @@ const MealPlanner = () => {
           });
         } catch (parseError) {
           console.error("Error parsing AI response:", parseError);
-          fallbackToSampleRecipes();
+          handleGenerationFailure();
         }
       } else {
-        // Fallback to sample recipes if AI fails
-        fallbackToSampleRecipes();
+        // AI generation failed
+        handleGenerationFailure();
       }
     } catch (error) {
       console.error("Error generating meal plan:", error);
-      fallbackToSampleRecipes();
+      handleGenerationFailure();
     } finally {
       setGenerating(false);
     }
   };
 
-  const fallbackToSampleRecipes = () => {
-    const filtered = sampleRecipes.filter(recipe => {
-      if (dietPreference === "high-protein") return recipe.protein > 30;
-      if (dietPreference === "low-carb") return recipe.carbs < 30;
-      return true;
-    });
-
-    setSuggestions(filtered);
-    
+  const handleGenerationFailure = () => {
+    setSuggestions([]);
     toast({
-      title: "Meal plan generated!",
-      description: `${filtered.length} recipes tailored to your ${dietPreference} diet`,
+      title: "Generation Failed",
+      description: "Unable to generate meal suggestions. Please try again later.",
+      variant: "destructive",
     });
   };
 

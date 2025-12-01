@@ -5,13 +5,87 @@ import { Link } from "react-router-dom";
 import { useState } from "react";
 import { useFeed } from "@/hooks/useCommunity";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
+import { createPost, likePost } from "@/lib/community";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { PageTransition } from '@/components/animations/PageTransition';
+import BottomNav from '@/components/BottomNav';
 
 const Feed = () => {
   const [newPost, setNewPost] = useState("");
-  const { posts, loading } = useFeed();
+  const [isPosting, setIsPosting] = useState(false);
+  const { posts, loading, refetch } = useFeed();
+  const { currentUser } = useAuth();
+  const { toast } = useToast();
+
+  const handleCreatePost = async () => {
+    if (!currentUser) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to create a post",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!newPost.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter some content for your post",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsPosting(true);
+    try {
+      await createPost({
+        userId: currentUser.uid,
+        userName: currentUser.displayName || 'User',
+        userAvatar: currentUser.photoURL || undefined,
+        content: newPost.trim(),
+        type: 'general',
+      });
+
+      setNewPost("");
+      toast({
+        title: "Success!",
+        description: "Your post has been created",
+      });
+
+      // Refresh the feed
+      await refetch();
+    } catch (error) {
+      console.error('Error creating post:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create post. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPosting(false);
+    }
+  };
+
+  const handleLikePost = async (postId: string) => {
+    if (!currentUser) return;
+    
+    try {
+      await likePost(postId, currentUser.uid);
+      await refetch();
+    } catch (error) {
+      console.error('Error liking post:', error);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-background pb-8">
+    <PageTransition>
+      <div className="min-h-screen bg-background pb-32 relative overflow-hidden">
+        {/* Background Gradients */}
+        <div className="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+          <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-primary/5 blur-[100px]" />
+          <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-secondary/5 blur-[100px]" />
+        </div>
       {/* Header */}
       <div className="px-6 pt-8 pb-6 sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border">
         <div className="flex items-center gap-4">
@@ -37,9 +111,13 @@ const Feed = () => {
             <Button variant="ghost" size="icon" className="text-muted-foreground">
               <Camera className="w-5 h-5" />
             </Button>
-            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl shadow-glow">
+            <Button 
+              onClick={handleCreatePost}
+              disabled={isPosting || !newPost.trim()}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl shadow-glow disabled:opacity-50"
+            >
               <Send className="w-4 h-4 mr-2" />
-              Post
+              {isPosting ? "Posting..." : "Post"}
             </Button>
           </div>
         </div>
@@ -68,9 +146,12 @@ const Feed = () => {
                 )}
               </div>
               <div className="px-6 pb-6 flex items-center gap-6">
-                <button className="flex items-center gap-2 text-muted-foreground hover:text-destructive transition-smooth">
+                <button 
+                  onClick={() => handleLikePost(post.id!)}
+                  className="flex items-center gap-2 text-muted-foreground hover:text-destructive transition-smooth"
+                >
                   <Heart className="w-5 h-5" />
-                  <span className="text-sm font-semibold">{post.likes}</span>
+                  <span className="text-sm font-semibold">{post.likesCount || post.likes || 0}</span>
                 </button>
                 <button className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-smooth">
                   <MessageCircle className="w-5 h-5" />
@@ -90,7 +171,10 @@ const Feed = () => {
           </div>
         )}
       </div>
-    </div>
+
+        <BottomNav />
+      </div>
+    </PageTransition>
   );
 };
 

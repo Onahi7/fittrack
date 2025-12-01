@@ -70,12 +70,13 @@ export function useMeals(date?: Date) {
   }, [currentUser, authLoading, fetchMeals]);
 
   const addNewMeal = async (mealData: {
-    type: string;
+    name: string;
+    mealType: string;
     imageUrl?: string;
     calories?: number;
     protein?: number;
     carbs?: number;
-    fat?: number;
+    fats?: number;
     notes?: string;
   }) => {
     if (!currentUser) throw new Error('Not authenticated');

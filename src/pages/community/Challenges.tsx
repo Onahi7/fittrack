@@ -28,12 +28,14 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { createChallenge } from "@/lib/community";
 import { useToast } from "@/hooks/use-toast";
+import { joinChallenge } from "@/lib/community";
 
 const Challenges = () => {
   const { challenges: allChallenges, loading: allLoading, refetch: refetchAll } = useChallenges();
   const { challenges: userChallenges, loading: userLoading, refetch: refetchUser } = useUserChallenges();
   const { currentUser } = useAuth();
   const { toast } = useToast();
+  const [joiningChallenge, setJoiningChallenge] = useState<string | null>(null);
   
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -110,6 +112,40 @@ const Challenges = () => {
     }
   };
 
+  const handleJoinChallenge = async (challengeId: string) => {
+    if (!currentUser) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to join a challenge",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setJoiningChallenge(challengeId);
+    try {
+      await joinChallenge(challengeId, currentUser.uid);
+      
+      toast({
+        title: "Success!",
+        description: "You've joined the challenge!",
+      });
+
+      // Refresh both challenge lists
+      refetchAll();
+      refetchUser();
+    } catch (error) {
+      console.error('Error joining challenge:', error);
+      toast({
+        title: "Error",
+        description: "Failed to join challenge. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setJoiningChallenge(null);
+    }
+  };
+
   return (
     <PageTransition>
       <div className="min-h-screen bg-background pb-32 relative overflow-hidden">
@@ -175,10 +211,10 @@ const Challenges = () => {
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="water">💧 Water Intake</SelectItem>
-                        <SelectItem value="meals">🍱 Meal Tracking</SelectItem>
-                        <SelectItem value="streak">🔥 Daily Streak</SelectItem>
-                        <SelectItem value="custom">🎯 Custom Goal</SelectItem>
+                        <SelectItem key="water" value="water">💧 Water Intake</SelectItem>
+                        <SelectItem key="meals" value="meals">🍱 Meal Tracking</SelectItem>
+                        <SelectItem key="streak" value="streak">🔥 Daily Streak</SelectItem>
+                        <SelectItem key="custom" value="custom">🎯 Custom Goal</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -247,9 +283,9 @@ const Challenges = () => {
 
         <Tabs defaultValue="active" className="px-6">
           <TabsList className="w-full mb-6 bg-card/50 backdrop-blur-sm border border-border/50 p-1 rounded-2xl">
-            <TabsTrigger value="active" className="flex-1 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Active</TabsTrigger>
-            <TabsTrigger value="upcoming" className="flex-1 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Upcoming</TabsTrigger>
-            <TabsTrigger value="completed" className="flex-1 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Completed</TabsTrigger>
+            <TabsTrigger key="active" value="active" className="flex-1 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Active</TabsTrigger>
+            <TabsTrigger key="upcoming" value="upcoming" className="flex-1 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Upcoming</TabsTrigger>
+            <TabsTrigger key="completed" value="completed" className="flex-1 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Completed</TabsTrigger>
           </TabsList>
 
           {/* Active Challenges */}
@@ -297,9 +333,11 @@ const Challenges = () => {
                       <Button variant="outline" className="flex-1 rounded-2xl hover:bg-primary/5 hover:border-primary/50">
                         Leaderboard
                       </Button>
-                      <Button className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl shadow-glow">
-                        {challenge.type === 'custom' ? 'Update Progress' : 'View Details'}
-                      </Button>
+                      <Link to={`/challenges/${challenge.id}/daily`} className="flex-1">
+                        <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl shadow-glow">
+                          Daily Tasks
+                        </Button>
+                      </Link>
                     </div>
                     
                     {/* Auto-sync indicator for fitness challenges */}
@@ -349,8 +387,12 @@ const Challenges = () => {
                             {startsIn > 0 ? `Starts in ${startsIn} days` : 'Starting soon'}
                           </span>
                         </div>
-                        <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl shadow-glow">
-                          Join Challenge
+                        <Button 
+                          onClick={() => handleJoinChallenge(challenge.id!)}
+                          disabled={joiningChallenge === challenge.id}
+                          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl shadow-glow disabled:opacity-50"
+                        >
+                          {joiningChallenge === challenge.id ? "Joining..." : "Join Challenge"}
                         </Button>
                       </div>
                     </div>

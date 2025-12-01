@@ -11,6 +11,8 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AnimatePresence } from "framer-motion";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminProtectedRoute from "@/admin/components/AdminProtectedRoute";
+import PremiumChallengeBanner from "@/components/PremiumChallengeBanner";
+import { usePremiumChallengeBanner } from "@/hooks/usePremiumChallengeBanner";
 import AdminLayout from "@/admin/layouts/AdminLayout";
 import AdminLogin from "@/admin/pages/AdminLogin";
 import AdminDashboard from "@/admin/pages/AdminDashboard";
@@ -31,6 +33,7 @@ import WaterTracker from "./pages/WaterTracker";
 import Community from "./pages/Community";
 import Feed from "./pages/community/Feed";
 import Challenges from "./pages/community/Challenges";
+import ChallengeDaily from "./pages/community/ChallengeDaily";
 import Groups from "./pages/community/Groups";
 import Friends from "./pages/community/Friends";
 import Login from "./pages/Login";
@@ -39,6 +42,7 @@ import NotFound from "./pages/NotFound";
 import Privacy from "./pages/profile/Privacy";
 import Notifications from "./pages/profile/Notifications";
 import Help from "./pages/profile/Help";
+import EditProfile from "./pages/profile/EditProfile";
 import ProgressPhotos from "./pages/ProgressPhotos";
 import Buddies from "./pages/Buddies";
 import Reports from "./pages/Reports";
@@ -49,6 +53,23 @@ import MealPlanner from "./pages/MealPlanner";
 import SubscriptionCallback from "./pages/SubscriptionCallback";
 
 const queryClient = new QueryClient();
+
+function UserApp() {
+  const { currentBanner, dismissBanner, handleBannerJoin } = usePremiumChallengeBanner();
+  
+  return (
+    <>
+      <AnimatedRoutes />
+      {currentBanner && (
+        <PremiumChallengeBanner
+          challenge={currentBanner}
+          onDismiss={dismissBanner}
+          onJoin={handleBannerJoin}
+        />
+      )}
+    </>
+  );
+}
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -70,6 +91,7 @@ function AnimatedRoutes() {
             <Route path="/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
             <Route path="/meal-history" element={<ProtectedRoute><MealHistory /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
             <Route path="/profile/privacy" element={<ProtectedRoute><Privacy /></ProtectedRoute>} />
             <Route path="/profile/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
             <Route path="/profile/help" element={<ProtectedRoute><Help /></ProtectedRoute>} />
@@ -89,6 +111,7 @@ function AnimatedRoutes() {
             <Route path="/community/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
             <Route path="/community/challenges" element={<ProtectedRoute><Challenges /></ProtectedRoute>} />
             <Route path="/challenges" element={<ProtectedRoute><Challenges /></ProtectedRoute>} />
+            <Route path="/challenges/:id/daily" element={<ProtectedRoute><ChallengeDaily /></ProtectedRoute>} />
             <Route path="/community/groups" element={<ProtectedRoute><Groups /></ProtectedRoute>} />
             <Route path="/community/friends" element={<ProtectedRoute><Friends /></ProtectedRoute>} />
             
@@ -144,7 +167,7 @@ const App = () => (
                     <TooltipProvider>
                       <Toaster />
                       <Sonner />
-                      <AnimatedRoutes />
+                      <UserApp />
                     </TooltipProvider>
                   </WeightUnitProvider>
                 </SubscriptionProvider>

@@ -6,14 +6,133 @@ import { useGroups, useUserGroups } from "@/hooks/useCommunity";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { PageTransition } from '@/components/animations/PageTransition';
 import BottomNav from '@/components/BottomNav';
+import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { joinGroup, createGroup } from "@/lib/community";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 
 const Groups = () => {
-  const { groups: allGroups, loading: allLoading } = useGroups();
-  const { groups: myGroups, loading: myLoading } = useUserGroups();
+  const { groups: allGroups, loading: allLoading, refetch: refetchAll } = useGroups();
+  const { groups: myGroups, loading: myLoading, refetch: refetchMy } = useUserGroups();
+  const { currentUser } = useAuth();
+  const { toast } = useToast();
+  
+  const [joiningGroup, setJoiningGroup] = useState<string | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    category: "Weight Loss",
+    isPrivate: false,
+  });
   
   const discoverGroups = allGroups.filter((g) => 
     !myGroups.some((mg) => mg.id === g.id)
   );
+
+  const handleJoinGroup = async (groupId: string) => {
+    if (!currentUser) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to join a group",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setJoiningGroup(groupId);
+    try {
+      await joinGroup(groupId, currentUser.uid);
+      
+      toast({
+        title: "Success!",
+        description: "You've joined the group!",
+      });
+
+      // Refresh group lists
+      refetchAll();
+      refetchMy();
+    } catch (error) {
+      console.error('Error joining group:', error);
+      toast({
+        title: "Error",
+        description: "Failed to join group. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setJoiningGroup(null);
+    }
+  };
+
+  const handleCreateGroup = async () => {
+    if (!currentUser) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to create a group",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.name || !formData.description) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      await createGroup(currentUser.uid, formData);
+
+      toast({
+        title: "Success!",
+        description: "Group created successfully",
+      });
+
+      setCreateDialogOpen(false);
+      setFormData({
+        name: "",
+        description: "",
+        category: "Weight Loss",
+        isPrivate: false,
+      });
+
+      // Refresh groups
+      refetchAll();
+      refetchMy();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create group. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   return (
     <PageTransition>
@@ -35,10 +154,95 @@ const Groups = () => {
             <div className="flex-1">
               <h1 className="text-2xl font-bold font-heading">Groups</h1>
             </div>
-            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl shadow-glow">
-              <Plus className="w-4 h-4 mr-2" />
-              Create
-            </Button>
+            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl shadow-glow">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="font-heading text-2xl">Create Group</DialogTitle>
+                  <DialogDescription>
+                    Create a new group and invite others to join you!
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="groupName">Group Name *</Label>
+                    <Input
+                      id="groupName"
+                      placeholder="e.g., Weekend Warriors"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="groupDescription">Description *</Label>
+                    <Textarea
+                      id="groupDescription"
+                      placeholder="Describe your group..."
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      className="min-h-[100px]"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Category</Label>
+                    <Select
+                      value={formData.category}
+                      onValueChange={(value) => setFormData({ ...formData, category: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem key="weight-loss" value="Weight Loss">🎯 Weight Loss</SelectItem>
+                        <SelectItem key="fitness" value="Fitness">💪 Fitness</SelectItem>
+                        <SelectItem key="nutrition" value="Nutrition">🥗 Nutrition</SelectItem>
+                        <SelectItem key="wellness" value="Wellness">🧘 Wellness</SelectItem>
+                        <SelectItem key="accountability" value="Accountability">📝 Accountability</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="private"
+                      checked={formData.isPrivate}
+                      onCheckedChange={(checked) => setFormData({ ...formData, isPrivate: checked })}
+                    />
+                    <Label htmlFor="private">Private Group</Label>
+                  </div>
+                  {formData.isPrivate && (
+                    <p className="text-xs text-muted-foreground">
+                      Private groups require approval to join
+                    </p>
+                  )}
+                </div>
+                
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setCreateDialogOpen(false)}
+                    className="flex-1 rounded-2xl"
+                    disabled={isCreating}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleCreateGroup}
+                    className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl shadow-glow"
+                    disabled={isCreating}
+                  >
+                    {isCreating ? "Creating..." : "Create Group"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
@@ -77,8 +281,12 @@ const Groups = () => {
                         </span>
                         <span className="text-xs text-primary font-semibold">{group.category}</span>
                       </div>
-                      <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl shadow-glow">
-                        Join Group
+                      <Button 
+                        onClick={() => handleJoinGroup(group.id!)}
+                        disabled={joiningGroup === group.id}
+                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl shadow-glow disabled:opacity-50"
+                      >
+                        {joiningGroup === group.id ? "Joining..." : "Join Group"}
                       </Button>
                     </div>
                   </div>

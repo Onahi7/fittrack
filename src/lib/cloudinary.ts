@@ -130,6 +130,57 @@ export async function uploadPostImage(file: File, userId?: string): Promise<stri
 }
 
 /**
+ * Upload a progress photo
+ * @param file Image file to upload
+ * @param userId User ID (for organizing uploads)
+ * @returns Promise resolving to { url: string, publicId: string }
+ */
+export async function uploadProgressPhoto(
+  file: File, 
+  userId?: string
+): Promise<{ url: string; publicId: string }> {
+  if (!isCloudinaryConfigured()) {
+    throw new Error('Cloudinary is not configured. Please add credentials to .env');
+  }
+
+  validateFile(file);
+
+  const folder = userId ? `intentional/progress/${userId}` : 'intentional/progress';
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', MEAL_UPLOAD_PRESET); // Reuse meal preset for progress photos
+  formData.append('folder', folder);
+  formData.append('quality', 'auto:good');
+  formData.append('fetch_format', 'auto');
+
+  try {
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || 'Upload failed');
+    }
+
+    const data: CloudinaryUploadResponse = await response.json();
+    return {
+      url: data.secure_url,
+      publicId: data.public_id
+    };
+  } catch (error) {
+    console.error('Cloudinary upload error:', error);
+    throw new Error(
+      error instanceof Error ? error.message : 'Failed to upload progress photo. Please try again.'
+    );
+  }
+}
+
+/**
  * Get optimized image URL with transformations
  * @param url Original Cloudinary URL
  * @param options Transformation options

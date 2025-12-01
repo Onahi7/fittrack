@@ -142,8 +142,7 @@ const WaterTracker = () => {
             <h3 className="font-semibold mb-4 font-heading">This Week</h3>
             <div className="space-y-3">
               {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => {
-                // Mock data for visualization
-                const dayGlasses = index < 5 ? 8 : index === 5 ? 7 : 6;
+                const dayGlasses = 0; // No mock data - will need real API integration
                 const dayPercentage = (dayGlasses / goal) * 100;
                 
                 return (

@@ -7,7 +7,7 @@ interface WeightUnitContextType {
   toggleUnit: () => void;
   setUnit: (unit: WeightUnit) => void;
   convertWeight: (weight: number, fromUnit: WeightUnit, toUnit: WeightUnit) => number;
-  formatWeight: (weight: number) => string;
+  formatWeight: (weight: number | string) => string;
 }
 
 const WeightUnitContext = createContext<WeightUnitContextType | undefined>(undefined);
@@ -41,8 +41,10 @@ export function WeightUnitProvider({ children }: { children: ReactNode }) {
     return weight * KG_TO_LBS;
   };
 
-  const formatWeight = (weight: number): string => {
-    return `${weight.toFixed(1)} ${unit}`;
+  const formatWeight = (weight: number | string): string => {
+    const weightNum = typeof weight === 'string' ? parseFloat(weight) : weight;
+    if (isNaN(weightNum)) return `0.0 ${unit}`;
+    return `${weightNum.toFixed(1)} ${unit}`;
   };
 
   return (

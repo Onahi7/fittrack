@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Camera, Upload, ArrowLeft, Loader2, Sparkles, Check } from "lucide-react";
+import { Camera, Upload, ArrowLeft, Loader2, Sparkles, Check, Plus, Trash2, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,7 +14,24 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
+interface FoodItem {
+  id: string;
+  name: string;
+  portion: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+}
+
+// Helper to clean JSON from markdown code fences
+const cleanJsonResponse = (text: string): string => {
+  // Remove markdown code fences if present
+  return text.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim();
+};
+
 const LogMeal = () => {
+  const [entryMode, setEntryMode] = useState<'photo' | 'manual'>('photo');
   const [image, setImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -25,6 +42,11 @@ const LogMeal = () => {
   const [fats, setFats] = useState<number>(0);
   const [mealType, setMealType] = useState<string>("Breakfast");
   const [notes, setNotes] = useState<string>("");
+  
+  // Manual entry states
+  const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
+  const [currentFood, setCurrentFood] = useState({ name: '', portion: '', calories: '' });
+  
   const { currentUser } = useAuth();
   const { addMeal } = useMeals();
   const { toast } = useToast();
@@ -50,7 +72,8 @@ const LogMeal = () => {
     try {
       const result = await geminiService.analyzeMealPhoto(imageBase64);
       if (result.success) {
-        const data = JSON.parse(result.text);
+        const cleanedText = cleanJsonResponse(result.text);
+        const data = JSON.parse(cleanedText);
         setCalories(data.estimatedCalories || 0);
         setProtein(data.protein || 0);
         setCarbs(data.carbs || 0);
@@ -77,11 +100,145 @@ const LogMeal = () => {
     }
   };
 
-  const handleSaveMeal = async () => {
-    if (!currentUser || !imageFile || calories === null) return;
+  const addFoodItem = () => {
+    if (!currentFood.name || !currentFood.portion) {
+      toast({
+        title: "Missing information",
+        description: "Please provide food name and portion",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    // Check if Cloudinary is configured
-    if (!isCloudinaryConfigured()) {
+    // If calories provided, validate it
+    if (currentFood.calories) {
+      const caloriesNum = parseInt(currentFood.calories);
+      if (isNaN(caloriesNum) || caloriesNum < 0) {
+        toast({
+          title: "Invalid calories",
+          description: "Please enter a valid number",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // If calories not provided, use AI to estimate
+    if (!currentFood.calories) {
+      estimateAndAddFood();
+    } else {
+      addFoodItemDirectly(parseInt(currentFood.calories));
+    }
+  };
+
+  const estimateAndAddFood = async () => {
+    setSaving(true);
+    toast({
+      title: "Estimating calories...",
+      description: "Using AI to analyze nutrition",
+    });
+
+    try {
+      const result = await geminiService.estimateFoodCalories({
+        foodName: currentFood.name,
+        portion: currentFood.portion,
+      });
+
+      if (result.success) {
+        const cleanedText = cleanJsonResponse(result.text);
+        const data = JSON.parse(cleanedText);
+        addFoodItemDirectly(
+          data.estimatedCalories,
+          data.protein,
+          data.carbs,
+          data.fats
+        );
+        
+        toast({
+          title: "AI Estimate Complete",
+          description: `${data.estimatedCalories} cal (${data.confidence} confidence)`,
+        });
+      } else {
+        // Fallback estimate
+        addFoodItemDirectly(200);
+        toast({
+          title: "Using default estimate",
+          description: "AI unavailable, used 200 cal estimate",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error estimating calories:', error);
+      addFoodItemDirectly(200);
+      toast({
+        title: "Using default estimate",
+        description: "AI unavailable, used 200 cal estimate",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const addFoodItemDirectly = (
+    caloriesNum: number,
+    proteinGrams?: number,
+    carbsGrams?: number,
+    fatsGrams?: number
+  ) => {
+    // Calculate macros if not provided
+    const finalProtein = proteinGrams ?? Math.round(caloriesNum * 0.25 / 4);
+    const finalCarbs = carbsGrams ?? Math.round(caloriesNum * 0.45 / 4);
+    const finalFats = fatsGrams ?? Math.round(caloriesNum * 0.30 / 9);
+
+    const newItem: FoodItem = {
+      id: Date.now().toString(),
+      name: currentFood.name,
+      portion: currentFood.portion,
+      calories: caloriesNum,
+      protein: finalProtein,
+      carbs: finalCarbs,
+      fats: finalFats,
+    };
+
+    setFoodItems([...foodItems, newItem]);
+    setCurrentFood({ name: '', portion: '', calories: '' });
+
+    // Update totals
+    const totalCals = [...foodItems, newItem].reduce((sum, item) => sum + item.calories, 0);
+    const totalProtein = [...foodItems, newItem].reduce((sum, item) => sum + item.protein, 0);
+    const totalCarbs = [...foodItems, newItem].reduce((sum, item) => sum + item.carbs, 0);
+    const totalFats = [...foodItems, newItem].reduce((sum, item) => sum + item.fats, 0);
+
+    setCalories(totalCals);
+    setProtein(totalProtein);
+    setCarbs(totalCarbs);
+    setFats(totalFats);
+  };
+
+  const removeFoodItem = (id: string) => {
+    const updatedItems = foodItems.filter(item => item.id !== id);
+    setFoodItems(updatedItems);
+
+    // Recalculate totals
+    const totalCals = updatedItems.reduce((sum, item) => sum + item.calories, 0);
+    const totalProtein = updatedItems.reduce((sum, item) => sum + item.protein, 0);
+    const totalCarbs = updatedItems.reduce((sum, item) => sum + item.carbs, 0);
+    const totalFats = updatedItems.reduce((sum, item) => sum + item.fats, 0);
+
+    setCalories(totalCals || null);
+    setProtein(totalProtein);
+    setCarbs(totalCarbs);
+    setFats(totalFats);
+  };
+
+  const handleSaveMeal = async () => {
+    if (!currentUser || calories === null) return;
+
+    // For photo mode, check Cloudinary configuration
+    if (entryMode === 'photo' && !imageFile) return;
+    
+    if (entryMode === 'photo' && !isCloudinaryConfigured()) {
       toast({
         title: "Cloudinary not configured",
         description: "Please add your Cloudinary credentials to .env file. See CLOUDINARY_SETUP.md",
@@ -92,18 +249,30 @@ const LogMeal = () => {
 
     setSaving(true);
     try {
-      // Upload image to Cloudinary
-      const imageUrl = await uploadMealImage(imageFile, currentUser.uid);
+      let imageUrl = undefined;
+
+      // Upload image only if in photo mode
+      if (entryMode === 'photo' && imageFile) {
+        imageUrl = await uploadMealImage(imageFile, currentUser.uid);
+      }
+
+      // Create meal name from food items if in manual mode
+      const mealName = entryMode === 'manual' && foodItems.length > 0
+        ? foodItems.map(item => `${item.name} (${item.portion})`).join(', ')
+        : mealType;
 
       // Save meal to backend API
       await addMeal({
-        type: mealType,
+        name: mealName,
+        mealType: mealType.toLowerCase(),
         imageUrl,
         calories,
         protein,
         carbs,
-        fat: fats,
-        notes: notes,
+        fats,
+        notes: entryMode === 'manual' 
+          ? `${foodItems.map(item => `${item.name}: ${item.portion} - ${item.calories} kcal`).join('\n')}\n${notes}`.trim()
+          : notes,
       });
 
       toast({
@@ -151,12 +320,43 @@ const LogMeal = () => {
               </p>
             </div>
           </div>
+
+          {/* Mode Toggle */}
+          <div className="grid grid-cols-2 gap-2 mt-6 bg-card/50 p-1.5 rounded-2xl border border-border/50">
+            <Button
+              variant={entryMode === 'photo' ? 'default' : 'ghost'}
+              onClick={() => setEntryMode('photo')}
+              className={`rounded-xl h-10 transition-all ${
+                entryMode === 'photo'
+                  ? 'bg-primary text-primary-foreground shadow-glow'
+                  : 'hover:bg-background/80'
+              }`}
+            >
+              <Camera className="w-4 h-4 mr-2" />
+              Photo
+            </Button>
+            <Button
+              variant={entryMode === 'manual' ? 'default' : 'ghost'}
+              onClick={() => setEntryMode('manual')}
+              className={`rounded-xl h-10 transition-all ${
+                entryMode === 'manual'
+                  ? 'bg-primary text-primary-foreground shadow-glow'
+                  : 'hover:bg-background/80'
+              }`}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Manual
+            </Button>
+          </div>
         </div>
 
         <div className="px-6 space-y-6">
-          {!image ? (
-            /* Upload Section */
-            <div 
+          {entryMode === 'photo' ? (
+            /* PHOTO MODE */
+            <>
+              {!image ? (
+                /* Upload Section */
+                <div 
               className="bg-card/50 backdrop-blur-sm rounded-3xl p-8 shadow-card border border-border/50 hover:bg-card/60 transition-colors relative overflow-hidden group cursor-pointer"
               onClick={() => fileInputRef.current?.click()}
             >
@@ -318,6 +518,214 @@ const LogMeal = () => {
                 </motion.div>
               )}
             </motion.div>
+          )}
+            </>
+          ) : (
+            /* MANUAL ENTRY MODE */
+            <div className="space-y-6">
+              {/* Add Food Item Form */}
+              <div className="bg-card/50 backdrop-blur-sm rounded-3xl p-6 shadow-card border border-border/50">
+                <h2 className="text-lg font-semibold mb-4 font-heading">Add Food Items</h2>
+                
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="foodName" className="text-sm font-medium mb-2 block">Food Name</Label>
+                    <Input
+                      id="foodName"
+                      value={currentFood.name}
+                      onChange={(e) => setCurrentFood({...currentFood, name: e.target.value})}
+                      placeholder="e.g., Rice, Chicken, Salad"
+                      className="bg-background/50 border-border/50 focus:border-primary rounded-xl h-12"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="portion" className="text-sm font-medium mb-2 block">Portion</Label>
+                      <Input
+                        id="portion"
+                        value={currentFood.portion}
+                        onChange={(e) => setCurrentFood({...currentFood, portion: e.target.value})}
+                        placeholder="e.g., 2 cups, 1 piece"
+                        className="bg-background/50 border-border/50 focus:border-primary rounded-xl h-12"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="calories" className="text-sm font-medium mb-2 block">
+                        Calories <span className="text-xs text-muted-foreground">(optional)</span>
+                      </Label>
+                      <Input
+                        id="calories"
+                        type="number"
+                        value={currentFood.calories}
+                        onChange={(e) => setCurrentFood({...currentFood, calories: e.target.value})}
+                        placeholder="AI will estimate"
+                        className="bg-background/50 border-border/50 focus:border-primary rounded-xl h-12"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="bg-primary/5 border border-primary/20 rounded-xl p-3">
+                    <p className="text-xs text-muted-foreground flex items-center gap-2">
+                      <Sparkles className="w-3 h-3 text-primary" />
+                      {currentFood.calories 
+                        ? "Using your calorie input" 
+                        : "Leave blank to use AI estimation based on food and portion"}
+                    </p>
+                  </div>
+
+                  <Button
+                    onClick={addFoodItem}
+                    disabled={saving}
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-2xl h-12"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Estimating...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Item
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Food Items List */}
+              {foodItems.length > 0 && (
+                <div className="bg-card/50 backdrop-blur-sm rounded-3xl p-6 shadow-card border border-border/50">
+                  <h3 className="text-lg font-semibold mb-4 font-heading">Your Meal</h3>
+                  <div className="space-y-3">
+                    {foodItems.map((item) => (
+                      <motion.div
+                        key={item.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        className="bg-background/50 rounded-xl p-4 border border-border/50"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="font-semibold">{item.name}</p>
+                              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                                {item.portion}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              <span className="font-bold text-primary">{item.calories} kcal</span>
+                              <span>P: {item.protein}g</span>
+                              <span>C: {item.carbs}g</span>
+                              <span>F: {item.fats}g</span>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeFoodItem(item.id)}
+                            className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Total Summary */}
+              {calories !== null && foodItems.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="space-y-6"
+                >
+                  <div className="bg-gradient-to-br from-primary to-accent rounded-3xl p-8 shadow-glow text-center relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-full bg-white/10 backdrop-blur-[1px]" />
+                    <div className="relative z-10">
+                      <p className="text-white text-sm font-medium mb-2 opacity-80">Total</p>
+                      <p className="text-6xl font-bold text-white mb-2 tracking-tight">{calories}</p>
+                      <p className="text-white/70 text-xs">Calories</p>
+                    </div>
+                  </div>
+
+                  {/* Meal Type Selection */}
+                  <div className="bg-card/50 backdrop-blur-sm rounded-3xl p-6 shadow-card border border-border/50">
+                    <Label className="text-sm font-medium mb-3 block">Meal Type</Label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {["Breakfast", "Lunch", "Dinner", "Snack"].map((type) => (
+                        <Button
+                          key={type}
+                          variant={mealType === type ? "default" : "outline"}
+                          onClick={() => setMealType(type)}
+                          className={`rounded-xl h-10 text-xs sm:text-sm transition-all ${
+                            mealType === type 
+                              ? "bg-primary text-primary-foreground shadow-glow" 
+                              : "bg-background/50 hover:bg-background/80 border-border/50"
+                          }`}
+                        >
+                          {type}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Macro Breakdown */}
+                  <div className="bg-card/50 backdrop-blur-sm rounded-3xl p-6 shadow-card border border-border/50">
+                    <p className="font-semibold mb-4 font-heading">Total Macros</p>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="bg-green-500/10 rounded-2xl p-4 text-center border border-green-500/20">
+                        <p className="text-2xl font-bold text-green-600">{protein}g</p>
+                        <p className="text-xs text-muted-foreground mt-1">Protein</p>
+                      </div>
+                      <div className="bg-orange-500/10 rounded-2xl p-4 text-center border border-orange-500/20">
+                        <p className="text-2xl font-bold text-orange-600">{carbs}g</p>
+                        <p className="text-xs text-muted-foreground mt-1">Carbs</p>
+                      </div>
+                      <div className="bg-red-500/10 rounded-2xl p-4 text-center border border-red-500/20">
+                        <p className="text-2xl font-bold text-red-600">{fats}g</p>
+                        <p className="text-xs text-muted-foreground mt-1">Fats</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Notes */}
+                  <div className="bg-card/50 backdrop-blur-sm rounded-3xl p-6 shadow-card border border-border/50">
+                    <Label htmlFor="notes" className="text-sm font-medium mb-2 block">Additional Notes</Label>
+                    <Textarea
+                      id="notes"
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="Add any additional details..."
+                      className="bg-background/50 border-border/50 focus:border-primary min-h-[100px] rounded-xl resize-none"
+                    />
+                  </div>
+
+                  <Button 
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-2xl h-14 shadow-glow text-lg"
+                    disabled={saving}
+                    onClick={handleSaveMeal}
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-5 h-5 mr-2" />
+                        Save to Diary
+                      </>
+                    )}
+                  </Button>
+                </motion.div>
+              )}
+            </div>
           )}
         </div>
         

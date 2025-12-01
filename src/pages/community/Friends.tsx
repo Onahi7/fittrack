@@ -12,6 +12,16 @@ import { useAuth } from "@/contexts/AuthContext";
 // Use community helpers instead of generic api client
 import { PageTransition } from '@/components/animations/PageTransition';
 import BottomNav from '@/components/BottomNav';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface SuggestedFriend {
   id?: string;
@@ -29,6 +39,7 @@ const Friends = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [suggestedFriends, setSuggestedFriends] = useState<SuggestedFriend[]>([]);
   const [loadingSuggested, setLoadingSuggested] = useState(false);
+  const [friendToRemove, setFriendToRemove] = useState<{id: string, name: string} | null>(null);
   const { toast } = useToast();
   
   // Fetch suggested friends
@@ -106,15 +117,16 @@ const Friends = () => {
     }
   };
 
-  const handleRemoveFriend = async (buddyId: string, name: string) => {
-    if (!currentUser) return;
+  const handleRemoveFriend = async () => {
+    if (!currentUser || !friendToRemove) return;
     try {
-      await removeFriend(buddyId);
+      await removeFriend(friendToRemove.id);
       toast({
         title: "Friend removed",
-        description: `${name} has been removed from your friends list.`,
+        description: `${friendToRemove.name} has been removed from your friends list.`,
         variant: "destructive",
       });
+      setFriendToRemove(null);
       window.location.reload();
     } catch (error) {
       toast({
@@ -122,6 +134,7 @@ const Friends = () => {
         description: "Failed to remove friend. Please try again.",
         variant: "destructive",
       });
+      setFriendToRemove(null);
     }
   };
 
@@ -213,7 +226,7 @@ const Friends = () => {
                         variant="ghost"
                         size="icon"
                         className="rounded-full text-destructive hover:text-destructive hover:bg-destructive/5"
-                        onClick={() => handleRemoveFriend(buddy.id!, buddy.buddy?.displayName || 'Friend')}
+                        onClick={() => setFriendToRemove({id: buddy.id!, name: buddy.buddy?.displayName || 'Friend'})}
                       >
                         <UserX className="w-4 h-4" />
                       </Button>
@@ -355,6 +368,28 @@ const Friends = () => {
             )}
           </TabsContent>
         </Tabs>
+
+        {/* Remove Friend Confirmation Dialog */}
+        <AlertDialog open={!!friendToRemove} onOpenChange={(open) => !open && setFriendToRemove(null)}>
+          <AlertDialogContent className="rounded-3xl bg-card border-border">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="font-heading">Remove Friend?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to remove <span className="font-semibold text-foreground">{friendToRemove?.name}</span> from your friends list?
+                This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="rounded-2xl">Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleRemoveFriend}
+                className="rounded-2xl bg-destructive hover:bg-destructive/90"
+              >
+                Remove Friend
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         <BottomNav />
       </div>
