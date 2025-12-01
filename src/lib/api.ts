@@ -93,7 +93,7 @@ export const api = {
       startDate: string;
       imageUrl?: string;
     }) => apiClient.post('/challenges', data),
-    createAdminChallenge: (data: {
+    createAdminChallenge: (data: FormData | {
       name: string;
       description: string;
       type: string;
@@ -107,7 +107,18 @@ export const api = {
       gift30Days?: boolean;
       hasDynamicTasks?: boolean;
       dailyTasks?: any[];
-    }) => apiClient.post('/challenges/admin', data),
+    }) => {
+      // If data is FormData, send with multipart/form-data headers
+      if (data instanceof FormData) {
+        return apiClient.post('/challenges/admin', data, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+      }
+      // Otherwise send as JSON
+      return apiClient.post('/challenges/admin', data);
+    },
     getAll: (limit?: number, offset?: number) =>
       apiClient.get('/challenges', { params: { limit, offset } }),
     getById: (id: number) => apiClient.get(`/challenges/${id}`),
