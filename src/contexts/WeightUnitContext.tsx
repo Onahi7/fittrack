@@ -18,7 +18,7 @@ const KG_TO_LBS = 2.20462;
 export function WeightUnitProvider({ children }: { children: ReactNode }) {
   const [unit, setUnitState] = useState<WeightUnit>(() => {
     const saved = localStorage.getItem('weightUnit');
-    return (saved === 'kg' || saved === 'lbs') ? saved : 'lbs';
+    return (saved === 'kg' || saved === 'lbs') ? saved : 'kg';
   });
 
   useEffect(() => {

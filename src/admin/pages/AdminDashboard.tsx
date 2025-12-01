@@ -33,6 +33,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [challengeDialogOpen, setChallengeDialogOpen] = useState(false);
   const [creatingChallenge, setCreatingChallenge] = useState(false);
+  const [challengeImage, setChallengeImage] = useState<File | null>(null);
   const [challengeForm, setChallengeForm] = useState({
     name: '',
     description: '',
@@ -81,12 +82,32 @@ const AdminDashboard = () => {
   const handleCreateChallenge = async () => {
     try {
       setCreatingChallenge(true);
-      await api.challenges.createAdminChallenge({
-        ...challengeForm,
-        goal: Number(challengeForm.goal),
-        duration: Number(challengeForm.duration),
-        dailyTasks: challengeForm.hasDynamicTasks ? dailyTasks : undefined,
-      });
+      
+      const formData = new FormData();
+      formData.append('name', challengeForm.name);
+      formData.append('description', challengeForm.isPremiumChallenge 
+        ? challengeForm.description || `Premium ${challengeForm.name} - Complete daily tasks to earn rewards!`
+        : challengeForm.description || `Join the ${challengeForm.name} challenge!`);
+      formData.append('type', challengeForm.type);
+      formData.append('goal', String(challengeForm.goal));
+      formData.append('duration', String(challengeForm.duration));
+      formData.append('startDate', challengeForm.startDate);
+      formData.append('isPremiumChallenge', String(challengeForm.isPremiumChallenge));
+      formData.append('requiresSubscription', String(challengeForm.requiresSubscription));
+      if (challengeForm.requiresSubscription) {
+        formData.append('subscriptionTier', challengeForm.subscriptionTier);
+      }
+      formData.append('gift30Days', String(challengeForm.gift30Days));
+      
+      if (challengeImage) {
+        formData.append('image', challengeImage);
+      }
+      
+      if (challengeForm.hasDynamicTasks && dailyTasks.length > 0) {
+        formData.append('dailyTasks', JSON.stringify(dailyTasks));
+      }
+
+      await api.challenges.createAdminChallenge(formData);
       
       toast({
         title: "Challenge Created!",
@@ -123,8 +144,7 @@ const AdminDashboard = () => {
       subscriptionTier: 'basic',
       gift30Days: false,
       hasDynamicTasks: true,
-    });
-    setDailyTasks([]);
+    });    setChallengeImage(null);    setDailyTasks([]);
   };
 
   const addTask = () => {
@@ -332,13 +352,24 @@ const AdminDashboard = () => {
                   </div>
                   
                   <div>
-                    <Label htmlFor="imageUrl">Image URL (Optional)</Label>
+                    <Label htmlFor="image">Challenge Image (Optional)</Label>
                     <Input
-                      id="imageUrl"
-                      value={challengeForm.imageUrl}
-                      onChange={(e) => setChallengeForm({...challengeForm, imageUrl: e.target.value})}
-                      placeholder="https://example.com/challenge-image.jpg"
+                      id="image"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setChallengeImage(file);
+                        }
+                      }}
+                      className="cursor-pointer"
                     />
+                    {challengeImage && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Selected: {challengeImage.name}
+                      </p>
+                    )}
                   </div>
 
                   {/* Access Control */}
