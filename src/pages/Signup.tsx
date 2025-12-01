@@ -54,23 +54,10 @@ const Signup = () => {
   const handleGoogleSignup = async () => {
     setLoading(true);
     try {
-      const result = await loginWithGoogle();
-      toast({
-        title: "Welcome to Fittrack!",
-        description: "Signed up successfully with Google.",
-      });
-      
-      // Check if user already has a profile (returning user)
-      if (result) {
-        const profile = await getUserProfile(result.user.uid);
-        if (profile && profile.startingWeight && profile.goalWeight) {
-          navigate("/");
-        } else {
-          navigate("/setup");
-        }
-      } else {
-        navigate("/setup");
-      }
+      // Redirect flow - no need to wait for result here
+      await loginWithGoogle();
+      // User will be redirected to Google, then back to the app
+      // The AuthContext will handle the redirect result
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Something went wrong. Please try again.";
       toast({
@@ -78,7 +65,6 @@ const Signup = () => {
         description: errorMessage,
         variant: "destructive",
       });
-    } finally {
       setLoading(false);
     }
   };

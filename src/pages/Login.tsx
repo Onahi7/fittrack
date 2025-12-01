@@ -59,23 +59,10 @@ const Login = () => {
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      const result = await loginWithGoogle();
-      toast({
-        title: "Welcome back!",
-        description: "Logged in successfully with Google.",
-      });
-      
-      // Check if user has completed setup
-      if (result) {
-        const profile = await getUserProfile(result.user.uid);
-        if (profile && (profile.setupCompleted || (profile.startingWeight && profile.goalWeight))) {
-          navigate("/");
-        } else {
-          navigate("/setup");
-        }
-      } else {
-        navigate("/");
-      }
+      // Redirect flow - no need to wait for result here
+      await loginWithGoogle();
+      // User will be redirected to Google, then back to the app
+      // The AuthContext will handle the redirect result
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Something went wrong. Please try again.";
       toast({
@@ -83,7 +70,6 @@ const Login = () => {
         description: errorMessage,
         variant: "destructive",
       });
-    } finally {
       setLoading(false);
     }
   };

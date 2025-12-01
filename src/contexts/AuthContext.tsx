@@ -7,7 +7,8 @@ import {
   onAuthStateChanged,
   updateProfile,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithRedirect,
+  getRedirectResult
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { api } from '@/lib/api';
@@ -83,13 +84,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginWithGoogle = async () => {
     try {
       const provider = new GoogleAuthProvider();
-      console.log('[Auth] Starting Google login...');
-      const userCredential = await signInWithPopup(auth, provider);
-      console.log('[Auth] Google login successful, syncing to backend...');
-      // Sync Google user to backend database
-      await syncUserToBackend(userCredential.user);
-      console.log('[Auth] Google user synced to backend');
-      return userCredential;
+      // Use redirect instead of popup for better performance on free tier
+      await signInWithRedirect(auth, provider);
+      // The actual sign-in will be handled by getRedirectResult in useEffect
+      return Promise.resolve({} as any); // Return empty promise, actual result handled after redirect
     } catch (error: any) {
       console.error('[Auth] Google login error:', error);
       console.error('[Auth] Error code:', error.code);
@@ -103,6 +101,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // Handle redirect result from Google sign-in
+    const handleRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          console.log('[Auth] Google redirect successful, syncing to backend...');
+          await syncUserToBackend(result.user);
+          console.log('[Auth] Google user synced to backend');
+        }
+      } catch (error) {
+        console.error('[Auth] Error handling redirect result:', error);
+      }
+    };
+
+    handleRedirectResult();
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         // Sync user to backend when auth state changes (e.g., page refresh)
