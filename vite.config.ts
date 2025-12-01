@@ -5,7 +5,7 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: './', // Important for Capacitor mobile apps
+  base: mode === 'production' ? '/' : './', // Use absolute path for production, relative for Capacitor
   server: {
     host: "::",
     port: 8080,
