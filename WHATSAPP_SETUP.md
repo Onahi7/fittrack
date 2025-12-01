@@ -1,6 +1,6 @@
 # WhatsApp Reminders Setup Guide
 
-This guide explains how to add WhatsApp reminder functionality to your Intentional app.
+This guide explains how to add WhatsApp reminder functionality to your Fittrack app.
 
 ---
 
@@ -114,7 +114,7 @@ export const sendDailyReminders = functions.pubsub
       
       if (!phoneNumber) return;
 
-      const message = \`🌟 Hi \${user.displayName}! Time to log your meal and stay on track with your health goals. Open Intentional app now!\`;
+      const message = \`🌟 Hi \${user.displayName}! Time to log your meal and stay on track with your health goals. Open Fittrack app now!\`;
 
       try {
         await twilioClient.messages.create({

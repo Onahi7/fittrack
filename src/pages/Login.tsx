@@ -18,9 +18,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Debug: Log the auth context to see what's available
-  console.log('Auth context:', authContext);
-  console.log('loginWithGoogle type:', typeof authContext.loginWithGoogle);
+  // Debug logs removed for production security
 
   const { login, loginWithGoogle } = authContext;
 

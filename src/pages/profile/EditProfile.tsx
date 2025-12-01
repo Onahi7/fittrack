@@ -83,7 +83,7 @@ const EditProfile = () => {
           setDailyWaterGoal(profile.dailyWaterGoal ? String(profile.dailyWaterGoal) : "8");
         }
       } catch (error) {
-        console.error("Error loading profile:", error);
+        // Profile loading failed
         toast({
           title: "Error loading profile",
           description: "Failed to load your profile data",
@@ -154,7 +154,7 @@ const EditProfile = () => {
       await logout();
       navigate("/welcome", { replace: true });
     } catch (error) {
-      console.error("Error deleting account:", error);
+      // Account deletion failed
       toast({
         title: "Deletion failed",
         description: "Failed to delete your account. Please try again or contact support.",

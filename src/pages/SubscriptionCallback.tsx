@@ -60,7 +60,7 @@ const SubscriptionCallback = () => {
           });
         }
       } catch (error) {
-        console.error('Verification error:', error);
+        // Verification failed
         setStatus('failed');
         toast({
           title: "Verification Error",

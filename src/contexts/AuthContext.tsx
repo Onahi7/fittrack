@@ -40,12 +40,12 @@ const syncUserToBackend = async (user: User) => {
       displayName: user.displayName || undefined,
       photoURL: user.photoURL || undefined,
     });
-    console.log('User synced to backend database');
+    // User synced to backend database
   } catch (error: any) {
     // 409 Conflict means user already exists, which is fine
     // 401 Unauthorized might happen if Firebase auth guard is not set up yet
     if (error?.response?.status === 409 || error?.response?.status === 401) {
-      console.log('User already exists in database or auth not configured');
+      // User already exists in database or auth not configured
     } else {
       console.error('Error syncing user to backend:', error);
     }

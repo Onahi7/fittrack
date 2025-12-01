@@ -1,8 +1,21 @@
+# Fittrack - Health Accountability App
+# https://fittrac.me
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /_next/
+Disallow: /private/
+
+# Specific crawlers
 User-agent: Googlebot
 Allow: /
+Crawl-delay: 1
 
 User-agent: Bingbot
 Allow: /
+Crawl-delay: 1
 
 User-agent: Twitterbot
 Allow: /
@@ -10,5 +23,8 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
-User-agent: *
-Allow: /
+# Sitemap
+Sitemap: https://fittrac.me/sitemap.xml
+
+# Host
+Host: https://fittrac.me

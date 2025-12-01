@@ -26,7 +26,7 @@ const Premium = () => {
     try {
       await upgradeSubscription(selectedTier, method);
     } catch (error) {
-      console.error('Payment error:', error);
+      // Payment processing failed
       toast({
         title: "Payment Failed",
         description: "Please try again or contact support.",

@@ -12,8 +12,8 @@ const faqs = [
     answer: "Navigate to 'Log Meal' from the home screen. You can manually enter meal details, scan a barcode, or use AI to analyze a photo of your food."
   },
   {
-    question: "What are Intentional Points?",
-    answer: "Intentional Points are earned by completing daily tasks like logging meals, drinking water, journaling, and checking in. They unlock achievements and help track your consistency."
+    question: "What are Fittrack Points?",
+    answer: "Fittrack Points are earned by completing daily tasks like logging meals, drinking water, journaling, and checking in. They unlock achievements and help track your consistency."
   },
   {
     question: "How does the streak system work?",
@@ -60,7 +60,7 @@ const supportChannels = [
   {
     icon: Mail,
     title: "Email Support",
-    description: "support@intentional.app",
+    description: "support@fittrac.me",
     action: "Send Email",
     available: "24-48 hour response time"
   },
@@ -78,7 +78,7 @@ export default function Help() {
 
   const handleContactSupport = (type: string) => {
     if (type === 'email') {
-      window.location.href = 'mailto:support@intentional.app';
+      window.location.href = 'mailto:support@fittrac.me';
     } else if (type === 'guide') {
       window.open('https://docs.intentional.app', '_blank');
     }

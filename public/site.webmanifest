@@ -1,0 +1,32 @@
+{
+  "name": "Fittrack - Your Health Accountability Partner",
+  "short_name": "Fittrack",
+  "description": "Track your meals, monitor your health metrics, and achieve your wellness goals with Fittrack - a comprehensive health and wellness accountability app.",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/fittrack-logo.png",
+      "sizes": "any",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#6366f1",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en-US",
+  "categories": ["health", "fitness", "lifestyle", "wellness"]
+}

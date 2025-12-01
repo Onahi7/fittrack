@@ -13,7 +13,7 @@ class GeminiService {
 
   async generateDailyScripture(): Promise<GeminiResponse> {
     try {
-      console.log('[Gemini] Generating daily scripture...');
+      // Generating daily scripture...
       const prompt = `Provide ONE single Bible verse from the Amplified Bible (AMP) that encourages:
 - Consistency and discipline
 - Spiritual growth
@@ -40,11 +40,11 @@ IMPORTANT: Provide ONLY ONE verse and reference, nothing else. Make sure it's fr
 
       return { text, success: true };
     } catch (error: unknown) {
-      console.error('Gemini API error:', error);
+      // Gemini API error occurred (details hidden for security)
       return {
         text: '"Do you not know that your body is a temple of the Holy Spirit who is within you, whom you have [received as a gift] from God, and that you are not your own [property]?" - 1 Corinthians 6:19 (AMP)',
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: 'API service unavailable',
       };
     }
   }
@@ -54,7 +54,7 @@ IMPORTANT: Provide ONLY ONE verse and reference, nothing else. Make sure it's fr
     country?: string;
   }): Promise<GeminiResponse> {
     try {
-      console.log('[Gemini] Generating nutrition tip for country:', params?.country || 'not specified');
+      // Generating nutrition tip for specified country
       const prompt = `Generate a practical, evidence-based nutrition tip for a health-focused app user${
         params?.country ? ` in ${params.country}` : ''
       }${
@@ -79,11 +79,11 @@ Example for USA: "Add chia seeds to yogurt for omega-3 fatty acids - reduces inf
 
       return { text, success: true };
     } catch (error: unknown) {
-      console.error('Gemini API error:', error);
+      // Gemini API error occurred (details hidden for security)
       return {
         text: 'Stay hydrated! Aim for 8 glasses of water daily to support metabolism and energy levels.',
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: 'API service unavailable',
       };
     }
   }
@@ -122,11 +122,11 @@ Return ONLY a valid JSON array of 4 meals, nothing else.`;
 
       return { text, success: true };
     } catch (error: unknown) {
-      console.error('Gemini API error:', error);
+      // Gemini API error occurred (details hidden for security)
       return {
         text: '[]',
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: 'API service unavailable',
       };
     }
   }
@@ -152,11 +152,11 @@ Example: "What made you feel strong and capable today?"`;
 
       return { text, success: true };
     } catch (error: unknown) {
-      console.error('Gemini API error:', error);
+      // Gemini API error occurred (details hidden for security)
       return {
         text: 'What made you feel strong and capable today?',
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: 'API service unavailable',
       };
     }
   }
@@ -218,11 +218,11 @@ Be conservative with calorie estimates. Consider hidden ingredients like oils an
 
       return { text, success: true };
     } catch (error: unknown) {
-      console.error('Gemini API error:', error);
+      // Gemini API error occurred (details hidden for security)
       return {
         text: '{"name": "Unknown meal", "confidence": "low", "nutrition": {"calories": 0, "protein": 0, "carbs": 0, "fats": 0, "fiber": 0, "sugar": 0, "sodium": 0}, "healthScore": 5, "insights": ["Unable to analyze image"], "improvements": "Try taking a clearer photo"}',
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: 'API service unavailable',
       };
     }
   }
@@ -259,11 +259,11 @@ Return ONLY valid JSON, nothing else.`;
 
       return { text, success: true };
     } catch (error: unknown) {
-      console.error('Gemini API error:', error);
+      // Gemini API error occurred (details hidden for security)
       return {
         text: '{"plan": []}',
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: 'API service unavailable',
       };
     }
   }
@@ -301,11 +301,11 @@ Return ONLY valid JSON, nothing else.`;
 
       return { text, success: true };
     } catch (error: unknown) {
-      console.error('Gemini API error:', error);
+      // Gemini API error occurred (details hidden for security)
       return {
         text: '{"estimatedCalories": 200, "protein": 12, "carbs": 25, "fats": 7, "confidence": "low", "reasoning": "Default estimate due to API error"}',
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: 'API service unavailable',
       };
     }
   }

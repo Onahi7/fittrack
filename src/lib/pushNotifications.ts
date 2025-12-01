@@ -28,13 +28,13 @@ class PushNotificationManager {
       this.swRegistration = await navigator.serviceWorker.register('/sw.js', {
         scope: '/',
       });
-      console.log('✅ Service worker registered');
+      // Service worker registered successfully
 
       // Wait for service worker to be ready
       await navigator.serviceWorker.ready;
       return true;
     } catch (error) {
-      console.error('❌ Service worker registration failed:', error);
+      // Service worker registration failed
       return false;
     }
   }
@@ -44,7 +44,7 @@ class PushNotificationManager {
    */
   async requestPermission(): Promise<NotificationPermission> {
     const permission = await Notification.requestPermission();
-    console.log(`Notification permission: ${permission}`);
+    // Notification permission checked
     return permission;
   }
 
@@ -76,7 +76,7 @@ class PushNotificationManager {
       const subscription = await this.swRegistration.pushManager.getSubscription();
       return subscription !== null;
     } catch (error) {
-      console.error('Error checking subscription:', error);
+      // Subscription check failed
       return false;
     }
   }
@@ -86,7 +86,7 @@ class PushNotificationManager {
    */
   async subscribe(authToken: string): Promise<boolean> {
     if (!VAPID_PUBLIC_KEY) {
-      console.error('❌ VAPID_PUBLIC_KEY not configured in .env');
+      // Push notification configuration error
       return false;
     }
 
@@ -100,7 +100,7 @@ class PushNotificationManager {
       if (Notification.permission !== 'granted') {
         const permission = await this.requestPermission();
         if (permission !== 'granted') {
-          console.log('Notification permission denied');
+          // Notification permission denied
           return false;
         }
       }
@@ -111,7 +111,7 @@ class PushNotificationManager {
         applicationServerKey: this.urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
       });
 
-      console.log('✅ Push subscription created');
+      // Push subscription created successfully
 
       // Send subscription to backend
       const response = await fetch(`${API_URL}/notifications/subscribe`, {
@@ -129,10 +129,10 @@ class PushNotificationManager {
         throw new Error('Failed to save subscription to server');
       }
 
-      console.log('✅ Subscription saved to server');
+      // Subscription saved to server successfully
       return true;
     } catch (error) {
-      console.error('❌ Failed to subscribe to push notifications:', error);
+      // Push notification subscription failed
       return false;
     }
   }
@@ -153,7 +153,7 @@ class PushNotificationManager {
       if (subscription) {
         // Unsubscribe from push manager
         await subscription.unsubscribe();
-        console.log('✅ Unsubscribed from push manager');
+        // Unsubscribed from push manager successfully
 
         // Remove from backend
         await fetch(`${API_URL}/notifications/unsubscribe`, {
@@ -167,12 +167,12 @@ class PushNotificationManager {
           }),
         });
 
-        console.log('✅ Subscription removed from server');
+        // Subscription removed from server successfully
       }
 
       return true;
     } catch (error) {
-      console.error('❌ Failed to unsubscribe:', error);
+      // Push notification unsubscription failed
       return false;
     }
   }
@@ -195,10 +195,10 @@ class PushNotificationManager {
       }
 
       const data = await response.json();
-      console.log('✅ Test notification sent:', data);
+      // Test notification sent successfully
       return data.success;
     } catch (error) {
-      console.error('❌ Failed to send test notification:', error);
+      // Test notification failed
       return false;
     }
   }

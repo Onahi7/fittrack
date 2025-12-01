@@ -113,7 +113,7 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
       setupCompleted: profile.setupCompleted,
     };
   } catch (error) {
-    console.error('Error getting user profile:', error);
+    // User profile error
     return null;
   }
 }
@@ -131,7 +131,7 @@ export async function incrementUserStats(
   amount = 1
 ): Promise<void> {
   // This will be handled by the backend automatically when logging meals/water
-  console.log(`Stats update: ${stat} +${amount} (handled by backend)`);
+  // Stats update logged to backend only
 }
 
 export async function updateStreak(uid: string, currentDate: Date): Promise<void> {
@@ -139,6 +139,6 @@ export async function updateStreak(uid: string, currentDate: Date): Promise<void
   try {
     await api.streaks.checkIn('daily');
   } catch (error) {
-    console.error('Error updating streak:', error);
+    // Streak update error
   }
 }

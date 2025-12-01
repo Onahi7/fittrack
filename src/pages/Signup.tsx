@@ -35,7 +35,7 @@ const Signup = () => {
     try {
       await signup(email, password, name);
       toast({
-        title: "Welcome to Intentional!",
+        title: "Welcome to Fittrack!",
         description: "Your account has been created successfully.",
       });
       navigate("/setup");
@@ -56,7 +56,7 @@ const Signup = () => {
     try {
       const result = await loginWithGoogle();
       toast({
-        title: "Welcome to Intentional!",
+        title: "Welcome to Fittrack!",
         description: "Signed up successfully with Google.",
       });
       

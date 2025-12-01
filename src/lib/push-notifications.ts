@@ -63,10 +63,10 @@ async function registerServiceWorker(): Promise<ServiceWorkerRegistration> {
     const registration = await navigator.serviceWorker.register('/sw.js', {
       scope: '/',
     });
-    console.log('✅ Service Worker registered:', registration);
+    // Service Worker registered successfully
     return registration;
   } catch (error) {
-    console.error('❌ Service Worker registration failed:', error);
+    // Service Worker registration failed
     throw error;
   }
 }
@@ -80,7 +80,7 @@ export async function requestPermission(): Promise<NotificationPermission> {
   }
 
   const permission = await Notification.requestPermission();
-  console.log('Notification permission:', permission);
+  // Notification permission checked
   return permission;
 }
 
@@ -94,7 +94,7 @@ export async function subscribeToPush(): Promise<PushSubscription | null> {
   }
 
   if (!VAPID_PUBLIC_KEY) {
-    console.error('VAPID_PUBLIC_KEY not configured. Add VITE_VAPID_PUBLIC_KEY to .env');
+    // Push notification configuration error
     return null;
   }
 
@@ -102,7 +102,7 @@ export async function subscribeToPush(): Promise<PushSubscription | null> {
     // Request permission first
     const permission = await requestPermission();
     if (permission !== 'granted') {
-      console.log('Notification permission not granted');
+      // Notification permission not granted
       return null;
     }
 
@@ -121,9 +121,9 @@ export async function subscribeToPush(): Promise<PushSubscription | null> {
         applicationServerKey,
       });
 
-      console.log('✅ Push subscription created:', subscription);
+      // Push subscription created successfully
     } else {
-      console.log('✅ Already subscribed:', subscription);
+      // Already subscribed to push notifications
     }
 
     // Send subscription to backend
@@ -131,7 +131,7 @@ export async function subscribeToPush(): Promise<PushSubscription | null> {
 
     return subscription;
   } catch (error) {
-    console.error('Error subscribing to push:', error);
+    // Push subscription error
     throw error;
   }
 }
@@ -147,7 +147,7 @@ export async function unsubscribeFromPush(): Promise<boolean> {
     const subscription = await registration.pushManager.getSubscription();
 
     if (!subscription) {
-      console.log('No subscription to unsubscribe from');
+      // No active subscription found
       return true;
     }
 
@@ -157,12 +157,12 @@ export async function unsubscribeFromPush(): Promise<boolean> {
     if (success) {
       // Remove from backend
       await removeSubscription(subscription.endpoint);
-      console.log('✅ Unsubscribed from push notifications');
+      // Unsubscribed from push notifications successfully
     }
 
     return success;
   } catch (error) {
-    console.error('Error unsubscribing from push:', error);
+    // Push unsubscription error
     return false;
   }
 }
@@ -184,9 +184,9 @@ async function saveSubscription(subscription: PushSubscription): Promise<void> {
       },
     });
 
-    console.log('✅ Subscription saved to backend');
+    // Subscription saved to backend successfully
   } catch (error) {
-    console.error('❌ Failed to save subscription to backend:', error);
+    // Backend subscription save failed
     throw error;
   }
 }
@@ -197,9 +197,9 @@ async function saveSubscription(subscription: PushSubscription): Promise<void> {
 async function removeSubscription(endpoint: string): Promise<void> {
   try {
     await api.notifications.unsubscribe({ endpoint });
-    console.log('✅ Subscription removed from backend');
+    // Subscription removed from backend successfully
   } catch (error) {
-    console.error('❌ Failed to remove subscription from backend:', error);
+    // Backend subscription removal failed
     throw error;
   }
 }
@@ -210,9 +210,9 @@ async function removeSubscription(endpoint: string): Promise<void> {
 export async function testNotification(): Promise<void> {
   try {
     const response = await api.notifications.test();
-    console.log('Test notification sent:', response.data);
+    // Test notification sent successfully
   } catch (error) {
-    console.error('Failed to send test notification:', error);
+    // Test notification error
     throw error;
   }
 }
@@ -225,7 +225,7 @@ export async function getNotificationPreferences(): Promise<any> {
     const response = await api.notifications.getPreferences();
     return response.data;
   } catch (error) {
-    console.error('Failed to get notification preferences:', error);
+    // Notification preferences error
     throw error;
   }
 }
@@ -236,9 +236,9 @@ export async function getNotificationPreferences(): Promise<any> {
 export async function updateNotificationPreferences(preferences: any): Promise<void> {
   try {
     await api.notifications.updatePreferences(preferences);
-    console.log('✅ Notification preferences updated');
+    // Notification preferences updated successfully
   } catch (error) {
-    console.error('Failed to update notification preferences:', error);
+    // Notification preferences update error
     throw error;
   }
 }

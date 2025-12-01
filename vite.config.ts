@@ -21,4 +21,20 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    minify: 'esbuild',
+    rollupOptions: {
+      external: [],
+      output: {
+        manualChunks: {
+          'framer-motion': ['framer-motion']
+        }
+      }
+    }
+  },
+  esbuild: {
+    // Only remove console.log and debugger but keep console.warn for framer-motion
+    pure: mode === 'production' ? ['console.log', 'console.debug', 'console.info'] : [],
+    drop: mode === 'production' ? ['debugger'] : []
+  }
 }));

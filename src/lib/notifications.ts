@@ -14,19 +14,19 @@ export interface NotificationPreferences {
 // Initialize local notifications
 export async function initializeLocalNotifications() {
   if (!isNative) {
-    console.log('Local notifications only work on native mobile apps');
+    // Local notifications only available on native mobile apps
     return false;
   }
 
   try {
     const permission = await LocalNotifications.requestPermissions();
     if (permission.display !== 'granted') {
-      console.log('Notification permission denied');
+      // Notification permission denied
       return false;
     }
     return true;
   } catch (error) {
-    console.error('Error initializing local notifications:', error);
+    // Local notification initialization error
     return false;
   }
 }
@@ -39,7 +39,7 @@ export async function scheduleLocalNotification(
   id?: number
 ) {
   if (!isNative) {
-    console.log('Local notifications only work on native mobile apps');
+    // Local notifications only available on native mobile apps
     return;
   }
 
@@ -58,9 +58,9 @@ export async function scheduleLocalNotification(
         }
       ]
     });
-    console.log('Notification scheduled for', scheduledTime);
+    // Notification scheduled successfully
   } catch (error) {
-    console.error('Error scheduling notification:', error);
+    // Notification scheduling error
   }
 }
 
@@ -123,10 +123,10 @@ export async function clearAllNotifications() {
     const pending = await LocalNotifications.getPending();
     if (pending.notifications.length > 0) {
       await LocalNotifications.cancel(pending);
-      console.log('Cleared all notifications');
+      // All notifications cleared successfully
     }
   } catch (error) {
-    console.error('Error clearing notifications:', error);
+    // Notification clearing error
   }
 }
 

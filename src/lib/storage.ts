@@ -47,7 +47,7 @@ export async function deleteFile(url: string): Promise<void> {
     const storageRef = ref(storage, url);
     await deleteObject(storageRef);
   } catch (error) {
-    console.error('Error deleting file:', error);
+    // File deletion error
   }
 }
 
