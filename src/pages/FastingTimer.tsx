@@ -135,14 +135,37 @@ const FastingTimer = () => {
         </div>
 
         {/* Header */}
-        <div className="px-6 pt-8 pb-6 flex justify-between items-center">
+        <div className="px-6 pt-8 pb-6">
           <div>
             <h1 className="text-3xl font-bold font-heading">Fasting Timer</h1>
-            <p className="text-muted-foreground">Track your fasting journey</p>
+            <p className="text-muted-foreground">Track your intermittent fasting journey</p>
           </div>
-          <Button variant="ghost" size="icon" className="rounded-full">
-            <History className="w-6 h-6" />
-          </Button>
+          
+          {/* Info Banner */}
+          <div className="mt-6 bg-gradient-to-br from-primary/10 via-primary/5 to-accent/10 rounded-3xl p-6 border border-primary/20">
+            <h3 className="font-semibold text-lg mb-2 flex items-center gap-2">
+              <span className="text-2xl">ℹ️</span>
+              How It Works
+            </h3>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li className="flex items-start gap-2">
+                <span className="text-primary mt-0.5">•</span>
+                <span><strong>Choose a plan:</strong> Select from popular fasting schedules (16:8, 18:6, etc.)</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary mt-0.5">•</span>
+                <span><strong>Start fasting:</strong> Timer tracks your fasting window automatically</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary mt-0.5">•</span>
+                <span><strong>Monitor progress:</strong> Watch your body transition through metabolic stages</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary mt-0.5">•</span>
+                <span><strong>End when ready:</strong> Complete your fast or extend it based on how you feel</span>
+              </li>
+            </ul>
+          </div>
         </div>
 
         <div className="px-6 space-y-6">
@@ -292,6 +315,61 @@ const FastingTimer = () => {
               </div>
               <p className="text-2xl font-bold font-heading">124h</p>
               <p className="text-sm text-muted-foreground">Total Fasted</p>
+            </div>
+          </div>
+
+          {/* Fasting Stages Explanation */}
+          <div className="bg-card/50 backdrop-blur-sm rounded-3xl p-6 shadow-card border border-border/50">
+            <h3 className="font-bold text-lg font-heading mb-4 flex items-center gap-2">
+              <span className="text-2xl">🔬</span>
+              Fasting Stages
+            </h3>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                  <span className="text-lg">🩸</span>
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">0-4 hours: Blood Sugar Rise</p>
+                  <p className="text-xs text-muted-foreground">Your body is still processing your last meal</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                  <span className="text-lg">📉</span>
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">4-8 hours: Blood Sugar Fall</p>
+                  <p className="text-xs text-muted-foreground">Insulin levels drop, body starts burning stored glucose</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-yellow-500/10 flex items-center justify-center flex-shrink-0">
+                  <span className="text-lg">✨</span>
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">8-12 hours: Normal State</p>
+                  <p className="text-xs text-muted-foreground">Glycogen stores depleting, preparing for fat burning</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-orange-500/10 flex items-center justify-center flex-shrink-0">
+                  <span className="text-lg">🔥</span>
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">12-18 hours: Ketosis</p>
+                  <p className="text-xs text-muted-foreground">Fat burning increases, ketone production begins</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+                  <span className="text-lg">🧬</span>
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">18+ hours: Autophagy</p>
+                  <p className="text-xs text-muted-foreground">Cell repair and regeneration, maximum fat burning</p>
+                </div>
+              </div>
             </div>
           </div>
 
