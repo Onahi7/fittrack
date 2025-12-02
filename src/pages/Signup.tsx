@@ -54,10 +54,9 @@ const Signup = () => {
   const handleGoogleSignup = async () => {
     setLoading(true);
     try {
-      // Redirect flow - no need to wait for result here
+      // Popup flow - wait for result and navigation
       await loginWithGoogle();
-      // User will be redirected to Google, then back to the app
-      // The AuthContext will handle the redirect result
+      // Navigation is handled in AuthContext
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Something went wrong. Please try again.";
       toast({

@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   User,
   createUserWithEmailAndPassword,
@@ -11,6 +12,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { api } from '@/lib/api';
+import { getUserProfile } from '@/lib/userProfile';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -55,6 +57,7 @@ const syncUserToBackend = async (user: User) => {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const signup = async (email: string, password: string, displayName: string) => {
     try {
@@ -87,30 +90,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const result = await signInWithPopup(auth, provider);
       
       if (result.user) {
-        console.log('[Auth] Google login successful, syncing to backend...');
-        await syncUserToBackend(result.user);
-        console.log('[Auth] Google user synced to backend');
+        console.log('[Auth] Google login successful');
         
-        // Check if this is a new user or returning user
-        const { getUserProfile } = await import('@/lib/userProfile');
+        // Optimization: Try to fetch profile first to see if user exists
+        // This avoids waiting for syncUserToBackend for returning users
         try {
           const profile = await getUserProfile(result.user.uid);
-          const hasCompletedSetup = profile && (profile.setupCompleted || (profile.startingWeight && profile.goalWeight));
           
-          console.log('[Auth] Profile check:', { hasProfile: !!profile, hasCompletedSetup });
-          
-          // Navigate based on setup status
-          if (!hasCompletedSetup) {
-            console.log('[Auth] Navigating to setup...');
-            window.location.replace('/setup');
+          if (profile) {
+            // User exists! Navigate immediately
+            console.log('[Auth] Returning user detected, navigating...');
+            const hasCompletedSetup = profile.setupCompleted || (profile.startingWeight && profile.goalWeight);
+            
+            // Sync in background to update details if needed (name, photo, etc.)
+            syncUserToBackend(result.user).catch(err => console.error('[Auth] Background sync error:', err));
+            
+            navigate(hasCompletedSetup ? '/' : '/setup');
           } else {
-            console.log('[Auth] Navigating to home...');
-            window.location.replace('/');
+            // Profile not found, likely a new user
+            console.log('[Auth] New user detected (no profile), syncing to backend...');
+            await syncUserToBackend(result.user);
+            
+            // For new users, send to setup
+            navigate('/setup');
           }
         } catch (error) {
-          console.log('[Auth] No profile found, navigating to setup...');
-          // If profile doesn't exist, send to setup
-          window.location.replace('/setup');
+          console.log('[Auth] Error checking profile, falling back to sync...', error);
+          // Fallback: Sync and send to setup
+          await syncUserToBackend(result.user);
+          navigate('/setup');
         }
       }
       
