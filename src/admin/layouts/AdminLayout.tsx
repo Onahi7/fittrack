@@ -15,6 +15,7 @@ import {
   X,
   CreditCard,
   Trophy,
+  Mail,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -23,6 +24,7 @@ const sidebarItems = [
   { icon: Users, label: 'Users', path: '/admin/users' },
   { icon: CreditCard, label: 'Subscriptions', path: '/admin/subscriptions' },
   { icon: Trophy, label: 'Challenges', path: '/admin/challenges' },
+  { icon: Mail, label: 'Email Queue', path: '/admin/emails' },
   { icon: UtensilsCrossed, label: 'Meals', path: '/admin/meals' },
   { icon: BookOpen, label: 'Journal Entries', path: '/admin/journal' },
   { icon: Droplet, label: 'Water Tracking', path: '/admin/water' },

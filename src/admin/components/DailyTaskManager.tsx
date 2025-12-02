@@ -71,6 +71,7 @@ const DailyTaskManager = ({ challengeId }: DailyTaskManagerProps) => {
     isRequired: true,
     points: '10',
     taskDate: new Date(),
+    dayOfChallenge: '',
   });
 
   useEffect(() => {
@@ -111,6 +112,7 @@ const DailyTaskManager = ({ challengeId }: DailyTaskManagerProps) => {
         targetValue: formData.targetValue ? parseInt(formData.targetValue) : undefined,
         points: parseInt(formData.points),
         taskDate: formData.taskDate.toISOString().split('T')[0],
+        dayOfChallenge: formData.dayOfChallenge ? parseInt(formData.dayOfChallenge) : undefined,
       });
 
       toast({
@@ -131,6 +133,7 @@ const DailyTaskManager = ({ challengeId }: DailyTaskManagerProps) => {
         isRequired: true,
         points: '10',
         taskDate: new Date(),
+        dayOfChallenge: '',
       });
       
       fetchDailyTasks();
@@ -356,6 +359,20 @@ const DailyTaskManager = ({ challengeId }: DailyTaskManagerProps) => {
                   value={formData.points}
                   onChange={(e) => setFormData({...formData, points: e.target.value})}
                 />
+              </div>
+              
+              <div>
+                <Label>Challenge Day (Optional)</Label>
+                <Input
+                  type="number"
+                  value={formData.dayOfChallenge}
+                  onChange={(e) => setFormData({...formData, dayOfChallenge: e.target.value})}
+                  placeholder="e.g., 1 for Day 1, leave empty for all days"
+                  min="1"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Specify which day of the challenge this task is for. Leave empty to apply to all days.
+                </p>
               </div>
               
               <div>

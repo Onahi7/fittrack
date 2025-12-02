@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Clock, Target, CheckCircle2, Circle, Play, Dumbbell, Utensils, Moon, Droplets } from 'lucide-react';
+import { ArrowLeft, Clock, Target, CheckCircle2, Circle, Play, Dumbbell, Utensils, Moon, Droplets, Users, Calendar, Trophy, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -42,10 +42,18 @@ interface Challenge {
   id: number;
   name: string;
   description: string;
+  type: string;
   goal: number;
   duration: number;
   startDate: string;
   endDate: string;
+  participantCount?: number;
+  imageUrl?: string;
+  isPremiumChallenge?: boolean;
+  requiresSubscription?: boolean;
+  subscriptionTier?: string;
+  hasDynamicTasks?: boolean;
+  creatorId?: string;
 }
 
 const ChallengeDaily = () => {
@@ -61,16 +69,31 @@ const ChallengeDaily = () => {
   });
   const [currentDay, setCurrentDay] = useState(1);
 
+  // Validate ID
+  const challengeId = id ? parseInt(id, 10) : NaN;
+
   const fetchChallengeData = useCallback(async () => {
-    if (!id) return;
+    if (!id || isNaN(challengeId)) {
+      toast({
+        title: 'Invalid Challenge',
+        description: 'Challenge not found',
+        variant: 'destructive',
+      });
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
       const [challengeRes, tasksRes, completionsRes] = await Promise.all([
-        api.challenges.getById(Number(id)),
-        api.challenges.getTasks(Number(id), currentDay),
-        api.challenges.getMyCompletions(Number(id)),
+        api.challenges.getById(challengeId),
+        api.challenges.getTasks(challengeId, currentDay),
+        api.challenges.getMyCompletions(challengeId),
       ]);
+
+      console.log('Challenge response:', challengeRes.data);
+      console.log('Tasks response:', tasksRes.data);
+      console.log('Completions response:', completionsRes.data);
 
       setChallenge(challengeRes.data);
       setTasks(tasksRes.data || []);
@@ -85,17 +108,17 @@ const ChallengeDaily = () => {
     } finally {
       setLoading(false);
     }
-  }, [id, currentDay]);
+  }, [id, challengeId, currentDay]);
 
   useEffect(() => {
     fetchChallengeData();
   }, [fetchChallengeData]);
 
   const handleCompleteTask = async () => {
-    if (!selectedTask) return;
+    if (!selectedTask || isNaN(challengeId)) return;
 
     try {
-      await api.challenges.completeTask(Number(id), selectedTask.id, {
+      await api.challenges.completeTask(challengeId, selectedTask.id, {
         actualValue: completionData.actualValue ? Number(completionData.actualValue) : undefined,
         notes: completionData.notes || undefined,
       });
@@ -119,8 +142,10 @@ const ChallengeDaily = () => {
   };
 
   const handleActivateFasting = async (fastingType: string) => {
+    if (isNaN(challengeId)) return;
+
     try {
-      await api.challenges.activateFasting(Number(id), fastingType);
+      await api.challenges.activateFasting(challengeId, fastingType);
       toast({
         title: 'Fasting Timer Activated!',
         description: `Started ${fastingType} fasting timer`,
@@ -191,6 +216,22 @@ const ChallengeDaily = () => {
     );
   }
 
+  if (isNaN(challengeId) || !challenge) {
+    return (
+      <PageTransition>
+        <div className="min-h-screen bg-background p-6">
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold mb-4">Challenge Not Found</h2>
+            <p className="text-muted-foreground mb-6">The challenge you're looking for doesn't exist.</p>
+            <Link to="/challenges">
+              <Button>Back to Challenges</Button>
+            </Link>
+          </div>
+        </div>
+      </PageTransition>
+    );
+  }
+
   return (
     <PageTransition>
       <div className="min-h-screen bg-background pb-32">
@@ -202,9 +243,93 @@ const ChallengeDaily = () => {
             </Button>
           </Link>
           
+          {/* Challenge Banner */}
+          {challenge?.imageUrl && (
+            <div className="mb-6 rounded-3xl overflow-hidden h-48 relative">
+              <img 
+                src={challenge.imageUrl} 
+                alt={challenge.name}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent" />
+              {challenge.isPremiumChallenge && (
+                <Badge className="absolute top-4 right-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0">
+                  <Award className="w-3 h-3 mr-1" />
+                  Premium Challenge
+                </Badge>
+              )}
+            </div>
+          )}
+          
           <div className="mb-6">
-            <h1 className="text-2xl font-bold mb-2">{challenge?.name}</h1>
-            <p className="text-muted-foreground">{challenge?.description}</p>
+            <div className="flex items-start justify-between mb-2">
+              <h1 className="text-2xl font-bold flex-1">{challenge?.name}</h1>
+              {challenge?.isPremiumChallenge && !challenge.imageUrl && (
+                <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0">
+                  <Award className="w-3 h-3 mr-1" />
+                  Premium
+                </Badge>
+              )}
+            </div>
+            <p className="text-muted-foreground mb-4">{challenge?.description}</p>
+            
+            {/* Challenge Info */}
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <Card className="p-4 bg-card/50">
+                <div className="flex items-center gap-2 mb-1">
+                  <Users className="w-4 h-4 text-primary" />
+                  <span className="text-xs text-muted-foreground">Participants</span>
+                </div>
+                <p className="text-xl font-bold">{challenge?.participantCount || 0}</p>
+              </Card>
+              
+              <Card className="p-4 bg-card/50">
+                <div className="flex items-center gap-2 mb-1">
+                  <Calendar className="w-4 h-4 text-primary" />
+                  <span className="text-xs text-muted-foreground">Duration</span>
+                </div>
+                <p className="text-xl font-bold">{challenge?.duration || 0} days</p>
+              </Card>
+              
+              <Card className="p-4 bg-card/50">
+                <div className="flex items-center gap-2 mb-1">
+                  <Target className="w-4 h-4 text-primary" />
+                  <span className="text-xs text-muted-foreground">Goal Type</span>
+                </div>
+                <p className="text-sm font-semibold capitalize">{challenge?.type || 'Custom'}</p>
+              </Card>
+              
+              <Card className="p-4 bg-card/50">
+                <div className="flex items-center gap-2 mb-1">
+                  <Trophy className="w-4 h-4 text-primary" />
+                  <span className="text-xs text-muted-foreground">Target</span>
+                </div>
+                <p className="text-sm font-semibold">{challenge?.goal || 0} {
+                  challenge?.type === 'water' ? 'glasses/day' :
+                  challenge?.type === 'meals' ? 'meals/day' :
+                  challenge?.type === 'streak' ? 'days' : 'points'
+                }</p>
+              </Card>
+            </div>
+
+            {/* Date Range */}
+            {challenge?.startDate && challenge?.endDate && (
+              <Card className="p-4 bg-gradient-to-r from-primary/5 to-accent/5">
+                <div className="flex items-center justify-between text-sm">
+                  <div>
+                    <p className="text-muted-foreground mb-1">Start Date</p>
+                    <p className="font-semibold">{new Date(challenge.startDate).toLocaleDateString()}</p>
+                  </div>
+                  <div className="text-center px-4">
+                    <div className="h-0.5 w-12 bg-border mb-1" />
+                  </div>
+                  <div className="text-right">
+                    <p className="text-muted-foreground mb-1">End Date</p>
+                    <p className="font-semibold">{new Date(challenge.endDate).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              </Card>
+            )}
           </div>
 
           {/* Progress Card */}
@@ -212,7 +337,7 @@ const ChallengeDaily = () => {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-sm text-muted-foreground">Day {currentDay} Progress</p>
-                <p className="text-2xl font-bold">{getTotalPoints()} / {challenge?.goal} pts</p>
+                <p className="text-2xl font-bold">{getTotalPoints()} / {challenge?.goal || 0} pts</p>
               </div>
               <div className="text-right">
                 <p className="text-sm text-muted-foreground">Challenge Progress</p>

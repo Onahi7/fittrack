@@ -46,7 +46,7 @@ const Achievements = () => {
 
     try {
       const token = await currentUser.getIdToken();
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/achievements/me`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/achievements/me`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

@@ -47,6 +47,7 @@ const Buddies = () => {
 
   const [buddies, setBuddies] = useState<Buddy[]>([]);
   const [requests, setRequests] = useState<BuddyRequest[]>([]);
+  const [sentRequests, setSentRequests] = useState<BuddyRequest[]>([]);
   const [suggestedBuddies, setSuggestedBuddies] = useState<any[]>([]);
 
   useEffect(() => {
@@ -54,6 +55,7 @@ const Buddies = () => {
     if (currentUser) {
       fetchBuddies();
       fetchRequests();
+      fetchSentRequests();
       fetchSuggested();
     }
   }, [currentUser]);
@@ -69,7 +71,7 @@ const Buddies = () => {
         setBuddies(data.map((b: any) => ({
           id: b.id.toString(),
           name: b.buddy.displayName || 'User',
-          image: b.buddy.photoURL || 'https://via.placeholder.com/200',
+          image: b.buddy.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(b.buddy.displayName || 'User')}&background=random`,
           streak: 0,
           weightLoss: 0,
           status: 'active',
@@ -96,7 +98,7 @@ const Buddies = () => {
         setRequests(data.map((r: any) => ({
           id: r.id.toString(),
           name: r.user.displayName || 'User',
-          image: r.user.photoURL || 'https://via.placeholder.com/200',
+          image: r.user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(r.user.displayName || 'User')}&background=random`,
           streak: 0,
           weightLoss: 0,
           message: 'Wants to be accountability partners!'
@@ -109,10 +111,37 @@ const Buddies = () => {
     }
   };
 
+  const fetchSentRequests = async () => {
+    try {
+      console.log('[Buddies] Fetching sent requests...');
+      const token = await currentUser?.getIdToken();
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/buddies/requests/sent`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log('[Buddies] Sent requests response status:', response.status);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('[Buddies] Sent requests data:', data);
+        setSentRequests(data.map((r: any) => ({
+          id: r.id.toString(),
+          name: r.user.displayName || 'User',
+          image: r.user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(r.user.displayName || 'User')}&background=random`,
+          streak: 0,
+          weightLoss: 0,
+          message: 'Pending response...'
+        })));
+      } else {
+        console.error('[Buddies] Failed to fetch sent requests:', await response.text());
+      }
+    } catch (error) {
+      console.error('Error fetching sent requests:', error);
+    }
+  };
+
   const fetchSuggested = async () => {
     try {
       const token = await currentUser?.getIdToken();
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/buddies/suggested`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/buddies/suggested`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -120,7 +149,7 @@ const Buddies = () => {
         setSuggestedBuddies(data.map((s: any) => ({
           id: s.id,
           name: s.displayName || 'User',
-          image: s.photoURL || 'https://via.placeholder.com/200',
+          image: s.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.displayName || 'User')}&background=random`,
           streak: 0,
           weightLoss: 0,
           matchScore: Math.floor(Math.random() * 20) + 80
@@ -136,7 +165,7 @@ const Buddies = () => {
   const handleAcceptRequest = async (id: string) => {
     try {
       const token = await currentUser?.getIdToken();
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/buddies/requests/${id}/accept`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/buddies/requests/${id}/accept`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -161,7 +190,7 @@ const Buddies = () => {
   const handleRejectRequest = async (id: string) => {
     try {
       const token = await currentUser?.getIdToken();
-      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/buddies/requests/${id}`, {
+      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/buddies/requests/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -170,6 +199,7 @@ const Buddies = () => {
         description: "The buddy request has been declined",
       });
       fetchRequests();
+      fetchSentRequests(); // Also refresh sent requests
     } catch (error) {
       toast({
         title: "Error",
@@ -182,7 +212,7 @@ const Buddies = () => {
   const handleSendRequest = async (targetUserId: string, name: string) => {
     try {
       const token = await currentUser?.getIdToken();
-      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/buddies/request`, {
+      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/buddies/request`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -195,6 +225,7 @@ const Buddies = () => {
         description: `Your buddy request has been sent to ${name}`,
       });
       setFindBuddyOpen(false);
+      fetchSentRequests(); // Refresh sent requests
     } catch (error) {
       toast({
         title: "Error",
@@ -294,17 +325,20 @@ const Buddies = () => {
 
         <div className="px-6">
           <Tabs defaultValue="buddies" className="w-full">
-            <TabsList className="w-full mb-6 bg-card/50 backdrop-blur-sm border border-border/50 p-1 rounded-2xl">
-              <TabsTrigger value="buddies" className="flex-1 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                My Buddies ({buddies.length})
+            <TabsList className="w-full mb-6 bg-card/50 backdrop-blur-sm border border-border/50 p-1 rounded-2xl grid grid-cols-3">
+              <TabsTrigger value="buddies" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                Buddies ({buddies.length})
               </TabsTrigger>
-              <TabsTrigger value="requests" className="flex-1 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground relative">
-                Requests ({requests.length})
+              <TabsTrigger value="requests" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground relative">
+                Received ({requests.length})
                 {requests.length > 0 && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-white text-xs rounded-full flex items-center justify-center animate-pulse">
                     {requests.length}
                   </span>
                 )}
+              </TabsTrigger>
+              <TabsTrigger value="sent" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                Sent ({sentRequests.length})
               </TabsTrigger>
             </TabsList>
 
@@ -434,6 +468,66 @@ const Buddies = () => {
                       >
                         <X className="w-4 h-4 mr-2" />
                         Decline
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </TabsContent>
+
+            {/* Sent Requests Tab */}
+            <TabsContent value="sent" className="space-y-4">
+              {sentRequests.length === 0 ? (
+                <div className="bg-card/50 backdrop-blur-sm rounded-3xl p-12 shadow-card border border-border/50 text-center">
+                  <UserPlus className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2 font-heading">No Sent Requests</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Find accountability buddies and send them requests!
+                  </p>
+                  <Button
+                    onClick={() => setFindBuddyOpen(true)}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl shadow-glow"
+                  >
+                    <UserPlus className="w-5 h-5 mr-2" />
+                    Find Buddies
+                  </Button>
+                </div>
+              ) : (
+                sentRequests.map((request) => (
+                  <div
+                    key={request.id}
+                    className="bg-card/50 backdrop-blur-sm rounded-3xl p-6 shadow-card border border-border/50"
+                  >
+                    <div className="flex items-start gap-4 mb-4">
+                      <img
+                        src={request.image}
+                        alt={request.name}
+                        className="w-16 h-16 rounded-full object-cover"
+                      />
+                      <div className="flex-1">
+                        <h3 className="font-bold text-lg mb-1 font-heading">{request.name}</h3>
+                        <div className="flex items-center gap-3 text-sm text-muted-foreground mb-2">
+                          <span className="flex items-center gap-1">
+                            🔥 {request.streak} day streak
+                          </span>
+                          <span className="flex items-center gap-1">
+                            📉 -{request.weightLoss} {unit}
+                          </span>
+                        </div>
+                        <p className="text-sm text-primary italic">
+                          ⏳ {request.message}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3">
+                      <Button
+                        onClick={() => handleRejectRequest(request.id)}
+                        variant="outline"
+                        className="rounded-2xl hover:bg-destructive/5 hover:text-destructive"
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        Cancel Request
                       </Button>
                     </div>
                   </div>

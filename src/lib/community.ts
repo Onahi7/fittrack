@@ -129,7 +129,7 @@ export async function deletePost(postId: string) {
 // ==================== CHALLENGES ====================
 
 export interface Challenge {
-  id?: string;
+  id?: number;
   name: string;
   description: string;
   type: 'water' | 'meals' | 'streak' | 'custom';
@@ -137,9 +137,14 @@ export interface Challenge {
   duration: number; // in days
   startDate: unknown;
   endDate: unknown;
-  participantCount: number;
+  participantCount?: number;
   creatorId: string;
   imageUrl?: string;
+  isPremiumChallenge?: boolean;
+  requiresSubscription?: boolean;
+  subscriptionTier?: string;
+  gift30Days?: boolean;
+  hasDynamicTasks?: boolean;
   createdAt?: unknown;
 }
 
@@ -174,7 +179,8 @@ export async function getActiveChallenges() {
 
 export async function getUserChallenges(userId: string) {
   const response = await api.challenges.getUserChallenges();
-  return response.data;
+  // Backend returns {challenge, participation} structure, extract just the challenges
+  return response.data.map((item: any) => item.challenge || item);
 }
 
 export async function getChallengeLeaderboard(challengeId: string) {

@@ -12,6 +12,7 @@ import { AnimatePresence } from "framer-motion";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminProtectedRoute from "@/admin/components/AdminProtectedRoute";
 import PremiumChallengeBanner from "@/components/PremiumChallengeBanner";
+import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { usePremiumChallengeBanner } from "@/hooks/usePremiumChallengeBanner";
 import AdminLayout from "@/admin/layouts/AdminLayout";
 import AdminLogin from "@/admin/pages/AdminLogin";
@@ -19,6 +20,7 @@ import AdminDashboard from "@/admin/pages/AdminDashboard";
 import UsersManagement from "@/admin/pages/UsersManagement";
 import SubscriptionsManagement from "@/admin/pages/SubscriptionsManagement";
 import ChallengesManagement from "@/admin/pages/ChallengesManagement";
+import EmailManagement from "@/admin/pages/EmailManagement";
 import Home from "./pages/Home";
 import Journal from "./pages/Journal";
 import LogMeal from "./pages/LogMeal";
@@ -60,6 +62,7 @@ function UserApp() {
   return (
     <>
       <AnimatedRoutes />
+      <NotificationPrompt />
       {currentBanner && (
         <PremiumChallengeBanner
           challenge={currentBanner}
@@ -146,6 +149,7 @@ const App = () => (
                     <Route path="users" element={<UsersManagement />} />
                     <Route path="subscriptions" element={<SubscriptionsManagement />} />
                     <Route path="challenges" element={<ChallengesManagement />} />
+                    <Route path="emails" element={<EmailManagement />} />
                     <Route path="meals" element={<div className="p-6">Meals Management - Coming Soon</div>} />
                     <Route path="journal" element={<div className="p-6">Journal Management - Coming Soon</div>} />
                     <Route path="water" element={<div className="p-6">Water Tracking - Coming Soon</div>} />

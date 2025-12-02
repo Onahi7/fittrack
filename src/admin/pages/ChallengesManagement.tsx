@@ -8,8 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, Users, Trophy, Calendar, Target, TrendingUp } from "lucide-react";
+import { Plus, Edit, Trash2, Users, Trophy, Calendar, Target, TrendingUp, ListTodo } from "lucide-react";
 import { format } from "date-fns";
+import DailyTaskManager from "@/admin/components/DailyTaskManager";
 
 interface Challenge {
   id: number;
@@ -82,6 +83,7 @@ export default function ChallengesManagement() {
   const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<typeof CHALLENGE_TEMPLATES[0] | null>(null);
+  const [selectedChallengeForTasks, setSelectedChallengeForTasks] = useState<Challenge | null>(null);
   const [formData, setFormData] = useState<CreateChallengeData>({
     name: '',
     description: '',
@@ -509,6 +511,15 @@ export default function ChallengesManagement() {
                     </div>
 
                     <div className="flex items-center gap-2">
+                      <Button 
+                        variant="default" 
+                        size="sm"
+                        onClick={() => setSelectedChallengeForTasks(challenge)}
+                        className="flex items-center gap-2"
+                      >
+                        <ListTodo className="w-4 h-4" />
+                        Manage Tasks
+                      </Button>
                       <Button variant="outline" size="sm">
                         <Edit className="w-4 h-4" />
                       </Button>
@@ -528,6 +539,24 @@ export default function ChallengesManagement() {
           )}
         </CardContent>
       </Card>
+
+      {/* Task Management Dialog */}
+      {selectedChallengeForTasks && (
+        <Dialog open={!!selectedChallengeForTasks} onOpenChange={() => setSelectedChallengeForTasks(null)}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-primary" />
+                {selectedChallengeForTasks.name} - Task Management
+              </DialogTitle>
+              <DialogDescription>
+                Add and manage daily tasks for this challenge. Tasks can be assigned to specific days.
+              </DialogDescription>
+            </DialogHeader>
+            <DailyTaskManager challengeId={selectedChallengeForTasks.id} />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

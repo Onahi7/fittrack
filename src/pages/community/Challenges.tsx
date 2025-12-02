@@ -35,7 +35,7 @@ const Challenges = () => {
   const { challenges: userChallenges, loading: userLoading, refetch: refetchUser } = useUserChallenges();
   const { currentUser } = useAuth();
   const { toast } = useToast();
-  const [joiningChallenge, setJoiningChallenge] = useState<string | null>(null);
+  const [joiningChallenge, setJoiningChallenge] = useState<number | null>(null);
   
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -112,7 +112,7 @@ const Challenges = () => {
     }
   };
 
-  const handleJoinChallenge = async (challengeId: string) => {
+  const handleJoinChallenge = async (challengeId: number) => {
     if (!currentUser) {
       toast({
         title: "Error",
@@ -124,7 +124,7 @@ const Challenges = () => {
 
     setJoiningChallenge(challengeId);
     try {
-      await joinChallenge(challengeId, currentUser.uid);
+      await joinChallenge(String(challengeId), currentUser.uid);
       
       toast({
         title: "Success!",
@@ -296,57 +296,143 @@ const Challenges = () => {
               activeChallenges.map((challenge) => {
                 const icon = challenge.type === 'water' ? '💧' : challenge.type === 'meals' ? '🍱' : challenge.type === 'streak' ? '🔥' : '🎯';
                 const daysLeft = challenge.endDate ? Math.ceil((new Date(challenge.endDate as string).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
+                const daysCompleted = (challenge.duration || 0) - daysLeft;
+                const progressPercentage = challenge.duration ? (daysCompleted / challenge.duration) * 100 : 0;
+                
+                // Debug log to see what we're getting
+                console.log('Challenge data:', challenge);
                 
                 return (
-                  <div key={challenge.id} className="bg-card/50 backdrop-blur-sm rounded-3xl p-6 shadow-card border border-border/50">
-                    <div className="flex items-start gap-4 mb-4">
-                      <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-3xl">
-                        {challenge.imageUrl || icon}
+                  <div key={`active-${challenge.id}`} className="bg-card/50 backdrop-blur-sm rounded-3xl overflow-hidden shadow-card border border-border/50">
+                    {/* Challenge Image/Banner */}
+                    {challenge.imageUrl ? (
+                      <div className="relative h-40 overflow-hidden">
+                        <img 
+                          src={challenge.imageUrl as string} 
+                          alt={challenge.name || 'Challenge'}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/50 to-transparent" />
+                        {challenge.isPremiumChallenge && (
+                          <div className="absolute top-3 right-3">
+                            <div className="px-3 py-1 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs font-semibold flex items-center gap-1">
+                              <Trophy className="w-3 h-3" />
+                              Premium
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <div className="flex-1">
-                        <h3 className="font-bold text-lg mb-1 font-heading">{challenge.name}</h3>
-                        <p className="text-sm text-muted-foreground mb-2">{challenge.description}</p>
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Users className="w-4 h-4" />
-                            {challenge.participantCount}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            {daysLeft} days left
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Progress */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Duration</span>
-                        <span className="font-semibold text-primary">{challenge.duration} days</span>
-                      </div>
-                      <Progress value={(challenge.duration - daysLeft) / challenge.duration * 100} className="h-2" />
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex gap-3 mt-4">
-                      <Button variant="outline" className="flex-1 rounded-2xl hover:bg-primary/5 hover:border-primary/50">
-                        Leaderboard
-                      </Button>
-                      <Link to={`/challenges/${challenge.id}/daily`} className="flex-1">
-                        <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl shadow-glow">
-                          Daily Tasks
-                        </Button>
-                      </Link>
-                    </div>
-                    
-                    {/* Auto-sync indicator for fitness challenges */}
-                    {challenge.type !== 'custom' && (
-                      <div className="mt-3 text-xs text-muted-foreground flex items-center gap-1">
-                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                        Auto-syncing from your {challenge.type} logs
+                    ) : (
+                      <div className="relative h-32 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                        <div className="text-6xl opacity-50">{icon}</div>
+                        {challenge.isPremiumChallenge && (
+                          <div className="absolute top-3 right-3">
+                            <div className="px-3 py-1 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs font-semibold flex items-center gap-1">
+                              <Trophy className="w-3 h-3" />
+                              Premium
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
+
+                    <div className="p-6">
+                      {/* Header */}
+                      <div className="mb-4">
+                        <h3 className="font-bold text-lg mb-2 font-heading">{challenge.name || 'Untitled Challenge'}</h3>
+                        <p className="text-sm text-muted-foreground line-clamp-2">{challenge.description || 'No description available'}</p>
+                      </div>
+
+                      {/* Stats Grid */}
+                      <div className="grid grid-cols-2 gap-3 mb-4">
+                        <div className="bg-background/50 rounded-2xl p-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Calendar className="w-4 h-4 text-primary" />
+                            <span className="text-xs text-muted-foreground">Days Left</span>
+                          </div>
+                          <p className="text-lg font-bold">{daysLeft > 0 ? daysLeft : 0}</p>
+                        </div>
+
+                        <div className="bg-background/50 rounded-2xl p-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Trophy className="w-4 h-4 text-primary" />
+                            <span className="text-xs text-muted-foreground">Goal</span>
+                          </div>
+                          <p className="text-sm font-semibold">{challenge.goal || 0} {
+                            challenge.type === 'water' ? 'glasses/day' :
+                            challenge.type === 'meals' ? 'meals/day' :
+                            challenge.type === 'streak' ? 'days' : 'points'
+                          }</p>
+                        </div>
+
+                        <div className="bg-background/50 rounded-2xl p-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs text-muted-foreground">Duration</span>
+                          </div>
+                          <p className="text-sm font-semibold">{challenge.duration || 0} days</p>
+                        </div>
+
+                        <div className="bg-background/50 rounded-2xl p-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs text-muted-foreground">Type</span>
+                          </div>
+                          <p className="text-sm font-semibold capitalize">{challenge.type || 'Custom'}</p>
+                        </div>
+                      </div>
+
+                      {/* Date Range */}
+                      {challenge.startDate && challenge.endDate && (
+                        <div className="bg-gradient-to-r from-primary/5 to-accent/5 rounded-2xl p-3 mb-4">
+                          <div className="flex items-center justify-between text-xs">
+                            <div>
+                              <p className="text-muted-foreground mb-1">Started</p>
+                              <p className="font-semibold">{new Date(challenge.startDate as string).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                            </div>
+                            <div className="flex-1 flex items-center justify-center">
+                              <div className="h-0.5 w-12 bg-border" />
+                            </div>
+                            <div className="text-right">
+                              <p className="text-muted-foreground mb-1">Ends</p>
+                              <p className="font-semibold">{new Date(challenge.endDate as string).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Progress */}
+                      <div className="space-y-2 mb-4">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Progress</span>
+                          <span className="font-semibold text-primary">
+                            Day {daysCompleted > 0 ? daysCompleted : 1} of {challenge.duration || 0}
+                          </span>
+                        </div>
+                        <Progress value={progressPercentage} className="h-2" />
+                        <p className="text-xs text-muted-foreground text-right">
+                          {Math.round(progressPercentage)}% Complete
+                        </p>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-3">
+                        <Button variant="outline" className="flex-1 rounded-2xl hover:bg-primary/5 hover:border-primary/50">
+                          Leaderboard
+                        </Button>
+                        <Link to={`/challenges/${challenge.id}/daily`} className="flex-1">
+                          <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl shadow-glow">
+                            Daily Tasks
+                          </Button>
+                        </Link>
+                      </div>
+                      
+                      {/* Auto-sync indicator for fitness challenges */}
+                      {challenge.type !== 'custom' && (
+                        <div className="mt-3 text-xs text-muted-foreground flex items-center gap-1">
+                          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                          Auto-syncing from your {challenge.type} logs
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })
@@ -369,7 +455,7 @@ const Challenges = () => {
                 const startsIn = challenge.startDate ? Math.ceil((new Date(challenge.startDate as string).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
                 
                 return (
-                  <div key={challenge.id} className="bg-card/50 backdrop-blur-sm rounded-3xl p-6 shadow-card border border-border/50">
+                  <div key={`upcoming-${challenge.id}`} className="bg-card/50 backdrop-blur-sm rounded-3xl p-6 shadow-card border border-border/50">
                     <div className="flex items-start gap-4">
                       <div className="w-16 h-16 rounded-2xl bg-secondary/10 flex items-center justify-center text-3xl">
                         {challenge.imageUrl || icon}
@@ -388,8 +474,8 @@ const Challenges = () => {
                           </span>
                         </div>
                         <Button 
-                          onClick={() => handleJoinChallenge(challenge.id!)}
-                          disabled={joiningChallenge === challenge.id}
+                          onClick={() => challenge.id && handleJoinChallenge(challenge.id)}
+                          disabled={joiningChallenge === challenge.id || !challenge.id}
                           className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl shadow-glow disabled:opacity-50"
                         >
                           {joiningChallenge === challenge.id ? "Joining..." : "Join Challenge"}
