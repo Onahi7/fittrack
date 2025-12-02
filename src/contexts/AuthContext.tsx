@@ -7,8 +7,7 @@ import {
   onAuthStateChanged,
   updateProfile,
   GoogleAuthProvider,
-  signInWithRedirect,
-  getRedirectResult
+  signInWithPopup
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { api } from '@/lib/api';
@@ -84,10 +83,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginWithGoogle = async () => {
     try {
       const provider = new GoogleAuthProvider();
-      // Use redirect instead of popup for better performance on free tier
-      await signInWithRedirect(auth, provider);
-      // The actual sign-in will be handled by getRedirectResult in useEffect
-      return Promise.resolve({} as any); // Return empty promise, actual result handled after redirect
+      // Use popup for better UX and reliability
+      const result = await signInWithPopup(auth, provider);
+      
+      if (result.user) {
+        console.log('[Auth] Google login successful, syncing to backend...');
+        await syncUserToBackend(result.user);
+        console.log('[Auth] Google user synced to backend');
+        
+        // Check if this is a new user or returning user
+        const { getUserProfile } = await import('@/lib/userProfile');
+        try {
+          const profile = await getUserProfile(result.user.uid);
+          const hasCompletedSetup = profile && (profile.setupCompleted || (profile.startingWeight && profile.goalWeight));
+          
+          console.log('[Auth] Profile check:', { hasProfile: !!profile, hasCompletedSetup });
+          
+          // Navigate based on setup status
+          if (!hasCompletedSetup) {
+            console.log('[Auth] Navigating to setup...');
+            window.location.replace('/setup');
+          } else {
+            console.log('[Auth] Navigating to home...');
+            window.location.replace('/');
+          }
+        } catch (error) {
+          console.log('[Auth] No profile found, navigating to setup...');
+          // If profile doesn't exist, send to setup
+          window.location.replace('/setup');
+        }
+      }
+      
+      return result;
     } catch (error: any) {
       console.error('[Auth] Google login error:', error);
       console.error('[Auth] Error code:', error.code);
@@ -101,52 +128,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    let handledRedirect = false;
-
-    // Handle redirect result from Google sign-in
-    const handleRedirectResult = async () => {
-      try {
-        const result = await getRedirectResult(auth);
-        if (result?.user && !handledRedirect) {
-          handledRedirect = true;
-          console.log('[Auth] Google redirect successful, syncing to backend...');
-          await syncUserToBackend(result.user);
-          console.log('[Auth] Google user synced to backend');
-          
-          // Small delay to ensure backend sync completes
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          // Check if this is a new user or returning user
-          const { getUserProfile } = await import('@/lib/userProfile');
-          try {
-            const profile = await getUserProfile(result.user.uid);
-            const hasCompletedSetup = profile && (profile.setupCompleted || (profile.startingWeight && profile.goalWeight));
-            
-            console.log('[Auth] Profile check:', { hasProfile: !!profile, hasCompletedSetup });
-            
-            // Navigate based on setup status
-            if (!hasCompletedSetup) {
-              console.log('[Auth] Navigating to setup...');
-              window.location.replace('/setup');
-            } else {
-              console.log('[Auth] Navigating to home...');
-              window.location.replace('/');
-            }
-          } catch (error) {
-            console.log('[Auth] No profile found, navigating to setup...');
-            // If profile doesn't exist, send to setup
-            window.location.replace('/setup');
-          }
-        }
-      } catch (error) {
-        console.error('[Auth] Error handling redirect result:', error);
-      }
-    };
-
-    handleRedirectResult();
-
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user && !handledRedirect) {
+      if (user) {
         // Sync user to backend when auth state changes (e.g., page refresh)
         await syncUserToBackend(user);
       }
