@@ -139,7 +139,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         // Sync user to backend when auth state changes (e.g., page refresh)
-        await syncUserToBackend(user);
+        // Don't await this to prevent blocking the UI
+        syncUserToBackend(user).catch(err => console.error('[Auth] Background sync error:', err));
       }
       setCurrentUser(user);
       setLoading(false);

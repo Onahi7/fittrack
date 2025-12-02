@@ -23,9 +23,16 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
           setSetupCompleted(!!isSetupComplete);
         } catch (error) {
           console.error('Error checking setup status:', error);
+          // Don't block access on error, but maybe show a toast or retry?
+          // For now, assume setup is NOT complete if we can't verify, 
+          // BUT if it's a network error, this might trap the user.
+          // Better strategy: If error, maybe let them through to home but show error?
+          // Or retry?
+          // Let's stick to safe default: false.
           setSetupCompleted(false);
+        } finally {
+          setCheckingSetup(false);
         }
-        setCheckingSetup(false);
       }
     };
 
