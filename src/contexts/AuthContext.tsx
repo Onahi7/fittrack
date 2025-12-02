@@ -101,14 +101,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    let handledRedirect = false;
+
     // Handle redirect result from Google sign-in
     const handleRedirectResult = async () => {
       try {
         const result = await getRedirectResult(auth);
-        if (result?.user) {
+        if (result?.user && !handledRedirect) {
+          handledRedirect = true;
           console.log('[Auth] Google redirect successful, syncing to backend...');
           await syncUserToBackend(result.user);
           console.log('[Auth] Google user synced to backend');
+          
+          // Small delay to ensure backend sync completes
+          await new Promise(resolve => setTimeout(resolve, 1000));
           
           // Check if this is a new user or returning user
           const { getUserProfile } = await import('@/lib/userProfile');
@@ -116,15 +122,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const profile = await getUserProfile(result.user.uid);
             const hasCompletedSetup = profile && (profile.setupCompleted || (profile.startingWeight && profile.goalWeight));
             
+            console.log('[Auth] Profile check:', { hasProfile: !!profile, hasCompletedSetup });
+            
             // Navigate based on setup status
             if (!hasCompletedSetup) {
-              window.location.href = '/setup';
+              console.log('[Auth] Navigating to setup...');
+              window.location.replace('/setup');
             } else {
-              window.location.href = '/';
+              console.log('[Auth] Navigating to home...');
+              window.location.replace('/');
             }
           } catch (error) {
+            console.log('[Auth] No profile found, navigating to setup...');
             // If profile doesn't exist, send to setup
-            window.location.href = '/setup';
+            window.location.replace('/setup');
           }
         }
       } catch (error) {
@@ -135,7 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     handleRedirectResult();
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
+      if (user && !handledRedirect) {
         // Sync user to backend when auth state changes (e.g., page refresh)
         await syncUserToBackend(user);
       }
