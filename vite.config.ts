@@ -23,11 +23,15 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     minify: 'esbuild',
+    chunkSizeWarningLimit: 1000, // Increase warning limit to 1000kb
     rollupOptions: {
       external: [],
       output: {
         manualChunks: {
-          'framer-motion': ['framer-motion']
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-vendor': ['framer-motion', 'lucide-react'],
+          'firebase': ['firebase/auth', 'firebase/app'],
+          'chart-vendor': ['recharts']
         }
       }
     }
