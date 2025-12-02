@@ -82,8 +82,12 @@ export default function ChallengesManagement() {
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingChallenge, setEditingChallenge] = useState<Challenge | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<typeof CHALLENGE_TEMPLATES[0] | null>(null);
   const [selectedChallengeForTasks, setSelectedChallengeForTasks] = useState<Challenge | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
   const [formData, setFormData] = useState<CreateChallengeData>({
     name: '',
     description: '',
@@ -127,13 +131,27 @@ export default function ChallengesManagement() {
   const handleCreateChallenge = async () => {
     try {
       const token = localStorage.getItem('admin_token');
+      const formDataToSend = new FormData();
+      
+      formDataToSend.append('name', formData.name);
+      formDataToSend.append('description', formData.description);
+      formDataToSend.append('type', formData.type);
+      formDataToSend.append('goal', formData.goal.toString());
+      formDataToSend.append('duration', formData.duration.toString());
+      formDataToSend.append('startDate', formData.startDate);
+      
+      if (imageFile) {
+        formDataToSend.append('image', imageFile);
+      } else if (formData.imageUrl) {
+        formDataToSend.append('imageUrl', formData.imageUrl);
+      }
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/challenges/admin`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: formDataToSend,
       });
 
       if (response.ok) {
@@ -153,6 +171,57 @@ export default function ChallengesManagement() {
       toast({
         title: "Error",
         description: "Failed to create challenge",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleUpdateChallenge = async () => {
+    if (!editingChallenge) return;
+
+    try {
+      const token = localStorage.getItem('admin_token');
+      const formDataToSend = new FormData();
+      
+      formDataToSend.append('name', formData.name);
+      formDataToSend.append('description', formData.description);
+      formDataToSend.append('type', formData.type);
+      formDataToSend.append('goal', formData.goal.toString());
+      formDataToSend.append('duration', formData.duration.toString());
+      formDataToSend.append('startDate', formData.startDate);
+      
+      if (imageFile) {
+        formDataToSend.append('image', imageFile);
+      } else if (formData.imageUrl) {
+        formDataToSend.append('imageUrl', formData.imageUrl);
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/challenges/${editingChallenge.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formDataToSend,
+      });
+
+      if (response.ok) {
+        const updatedChallenge = await response.json();
+        setChallenges(challenges.map(c => c.id === updatedChallenge.id ? updatedChallenge : c));
+        setIsEditOpen(false);
+        setEditingChallenge(null);
+        resetForm();
+        toast({
+          title: "Success",
+          description: "Challenge updated successfully!"
+        });
+      } else {
+        throw new Error('Failed to update challenge');
+      }
+    } catch (error) {
+      console.error('Error updating challenge:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update challenge",
         variant: "destructive"
       });
     }
@@ -198,6 +267,35 @@ export default function ChallengesManagement() {
       imageUrl: ''
     });
     setSelectedTemplate(null);
+    setImageFile(null);
+    setImagePreview('');
+  };
+
+  const handleEditChallenge = (challenge: Challenge) => {
+    setEditingChallenge(challenge);
+    setFormData({
+      name: challenge.name,
+      description: challenge.description,
+      type: challenge.type,
+      goal: challenge.goal,
+      duration: challenge.duration,
+      startDate: new Date(challenge.startDate).toISOString().split('T')[0],
+      imageUrl: challenge.imageUrl || ''
+    });
+    setImagePreview(challenge.imageUrl || '');
+    setIsEditOpen(true);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const applyTemplate = (template: typeof CHALLENGE_TEMPLATES[0]) => {
@@ -374,6 +472,21 @@ export default function ChallengesManagement() {
                   placeholder="https://example.com/challenge-image.jpg"
                 />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="imageFile">Or Upload Image</Label>
+                <Input
+                  id="imageFile"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                />
+                {imagePreview && (
+                  <div className="mt-2">
+                    <img src={imagePreview} alt="Preview" className="w-32 h-32 object-cover rounded" />
+                  </div>
+                )}
+              </div>
             </div>
 
             <DialogFooter>
@@ -387,6 +500,170 @@ export default function ChallengesManagement() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Edit Challenge Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Challenge</DialogTitle>
+            <DialogDescription>Update challenge details and settings</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Challenge Name *</Label>
+              <Input
+                id="edit-name"
+                value={editingChallenge?.name || ''}
+                onChange={(e) => setEditingChallenge({ ...editingChallenge!, name: e.target.value })}
+                placeholder="Enter challenge name"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Description</Label>
+              <Input
+                id="edit-description"
+                value={editingChallenge?.description || ''}
+                onChange={(e) => setEditingChallenge({ ...editingChallenge!, description: e.target.value })}
+                placeholder="Enter challenge description"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-type">Type *</Label>
+                <select
+                  id="edit-type"
+                  className="w-full px-3 py-2 border rounded-md"
+                  value={editingChallenge?.type || ''}
+                  onChange={(e) => setEditingChallenge({ ...editingChallenge!, type: e.target.value as any })}
+                >
+                  <option value="">Select type</option>
+                  <option value="water">Water</option>
+                  <option value="sleep">Sleep</option>
+                  <option value="mood">Mood</option>
+                  <option value="meals">Meals</option>
+                  <option value="exercise">Exercise</option>
+                  <option value="weight">Weight</option>
+                  <option value="mindfulness">Mindfulness</option>
+                  <option value="steps">Steps</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-tier">Tier *</Label>
+                <select
+                  id="edit-tier"
+                  className="w-full px-3 py-2 border rounded-md"
+                  value={editingChallenge?.tier || ''}
+                  onChange={(e) => setEditingChallenge({ ...editingChallenge!, tier: e.target.value as any })}
+                >
+                  <option value="free">Free</option>
+                  <option value="premium">Premium</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-goal">Goal *</Label>
+                <Input
+                  id="edit-goal"
+                  type="number"
+                  value={editingChallenge?.goal || ''}
+                  onChange={(e) => setEditingChallenge({ ...editingChallenge!, goal: parseInt(e.target.value) || 0 })}
+                  placeholder="e.g., 8"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-duration">Duration (days) *</Label>
+                <Input
+                  id="edit-duration"
+                  type="number"
+                  value={editingChallenge?.duration || ''}
+                  onChange={(e) => setEditingChallenge({ ...editingChallenge!, duration: parseInt(e.target.value) || 0 })}
+                  placeholder="e.g., 30"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-points">Points</Label>
+                <Input
+                  id="edit-points"
+                  type="number"
+                  value={editingChallenge?.points || ''}
+                  onChange={(e) => setEditingChallenge({ ...editingChallenge!, points: parseInt(e.target.value) || 0 })}
+                  placeholder="e.g., 100"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-badge">Badge Icon</Label>
+                <Input
+                  id="edit-badge"
+                  value={editingChallenge?.badge || ''}
+                  onChange={(e) => setEditingChallenge({ ...editingChallenge!, badge: e.target.value })}
+                  placeholder="e.g., 💧"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-startDate">Start Date</Label>
+              <Input
+                id="edit-startDate"
+                type="date"
+                value={editingChallenge?.startDate || ''}
+                onChange={(e) => setEditingChallenge({ ...editingChallenge!, startDate: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-imageUrl">Challenge Image URL (Optional)</Label>
+              <Input
+                id="edit-imageUrl"
+                value={editingChallenge?.imageUrl || ''}
+                onChange={(e) => setEditingChallenge({ ...editingChallenge!, imageUrl: e.target.value })}
+                placeholder="https://example.com/challenge-image.jpg"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-imageFile">Or Upload New Image</Label>
+              <Input
+                id="edit-imageFile"
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+              />
+              {imagePreview && (
+                <div className="mt-2">
+                  <img src={imagePreview} alt="Preview" className="w-32 h-32 object-cover rounded" />
+                </div>
+              )}
+              {!imagePreview && editingChallenge?.imageUrl && (
+                <div className="mt-2">
+                  <img src={editingChallenge.imageUrl} alt="Current" className="w-32 h-32 object-cover rounded" />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setIsEditOpen(false); setEditingChallenge(null); setImageFile(null); setImagePreview(null); }}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateChallenge} disabled={!editingChallenge?.name || !editingChallenge?.type}>
+              Update Challenge
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -520,7 +797,11 @@ export default function ChallengesManagement() {
                         <ListTodo className="w-4 h-4" />
                         Manage Tasks
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEditChallenge(challenge)}
+                      >
                         <Edit className="w-4 h-4" />
                       </Button>
                       <Button 

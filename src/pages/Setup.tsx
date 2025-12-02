@@ -179,13 +179,13 @@ const Setup = () => {
             <div className="flex items-end gap-2">
               <Input
                 type="number"
-                placeholder="170"
+                placeholder="70"
                 value={currentWeight}
                 onChange={(e) => setCurrentWeight(e.target.value)}
                 className="flex-1 bg-background/50 border-border/50 rounded-2xl h-16 text-2xl font-semibold text-center focus:border-primary transition-all"
               />
               <div className="h-16 px-4 flex items-center justify-center bg-background/50 rounded-2xl border border-border/50">
-                <span className="text-muted-foreground font-medium">{unit}</span>
+                <span className="text-muted-foreground font-medium">kg</span>
               </div>
             </div>
           </motion.div>
@@ -204,13 +204,13 @@ const Setup = () => {
             <div className="flex items-end gap-2">
               <Input
                 type="number"
-                placeholder="150"
+                placeholder="65"
                 value={targetWeight}
                 onChange={(e) => setTargetWeight(e.target.value)}
                 className="flex-1 bg-background/50 border-border/50 rounded-2xl h-16 text-2xl font-semibold text-center focus:border-primary transition-all"
               />
               <div className="h-16 px-4 flex items-center justify-center bg-background/50 rounded-2xl border border-border/50">
-                <span className="text-muted-foreground font-medium">{unit}</span>
+                <span className="text-muted-foreground font-medium">kg</span>
               </div>
             </div>
           </motion.div>

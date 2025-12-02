@@ -373,7 +373,7 @@ const ChallengeDaily = () => {
             
             return (
               <Card key={task.id} className={`p-4 border-2 ${completed ? 'border-green-500/30 bg-green-500/5' : 'border-border'}`}>
-                <div className="flex items-start justify-between">
+                <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                   <div className="flex items-start gap-3 flex-1">
                     <div className={`p-2 rounded-xl ${colorClasses}`}>
                       {getTaskIcon(task.taskType)}
@@ -413,7 +413,7 @@ const ChallengeDaily = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 mt-4 sm:mt-0">
                     {completed ? (
                       <CheckCircle2 className="w-6 h-6 text-green-500" />
                     ) : (
@@ -423,7 +423,7 @@ const ChallengeDaily = () => {
                             size="sm"
                             variant="outline"
                             onClick={() => handleActivateFasting(task.fastingType!)}
-                            className="flex items-center gap-1"
+                            className="flex items-center gap-1 w-full sm:w-auto"
                           >
                             <Play className="w-3 h-3" />
                             Start Timer
@@ -435,6 +435,7 @@ const ChallengeDaily = () => {
                             <Button
                               size="sm"
                               onClick={() => setSelectedTask(task)}
+                              className="w-full sm:w-auto"
                             >
                               <Circle className="w-4 h-4 mr-1" />
                               Complete

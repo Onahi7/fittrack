@@ -109,6 +109,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log('[Auth] Google redirect successful, syncing to backend...');
           await syncUserToBackend(result.user);
           console.log('[Auth] Google user synced to backend');
+          
+          // Check if this is a new user or returning user
+          const { getUserProfile } = await import('@/lib/userProfile');
+          try {
+            const profile = await getUserProfile(result.user.uid);
+            const hasCompletedSetup = profile && (profile.setupCompleted || (profile.startingWeight && profile.goalWeight));
+            
+            // Navigate based on setup status
+            if (!hasCompletedSetup) {
+              window.location.href = '/setup';
+            } else {
+              window.location.href = '/';
+            }
+          } catch (error) {
+            // If profile doesn't exist, send to setup
+            window.location.href = '/setup';
+          }
         }
       } catch (error) {
         console.error('[Auth] Error handling redirect result:', error);

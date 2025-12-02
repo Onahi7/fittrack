@@ -124,9 +124,17 @@ const Community = () => {
               return (
                 <div key={challenge.id} className="bg-card rounded-3xl p-6 shadow-card border border-border">
                   <div className="flex items-start gap-4 mb-4">
-                    <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-2xl">
-                      {challenge.imageUrl || (challenge.type === 'water' ? '💧' : challenge.type === 'meals' ? '🍱' : '🔥')}
-                    </div>
+                    {challenge.imageUrl ? (
+                      <img 
+                        src={challenge.imageUrl as string}
+                        alt={challenge.name || 'Challenge'}
+                        className="w-12 h-12 rounded-2xl object-cover"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-2xl">
+                        {challenge.type === 'water' ? '💧' : challenge.type === 'meals' ? '🍱' : '🔥'}
+                      </div>
+                    )}
                     <div className="flex-1">
                       <h3 className="font-semibold mb-1">{challenge.name || 'Challenge'}</h3>
                       <p className="text-sm text-muted-foreground">{daysLeft} days left</p>

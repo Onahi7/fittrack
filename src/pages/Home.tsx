@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { Camera, Droplets, Smile, Utensils, LogOut, Sparkles, BookOpen, Users, Scan, Clock, Crown, ChefHat, Lock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Camera, Droplets, Smile, Utensils, LogOut, Sparkles, BookOpen, Users, Scan, Clock, Crown, ChefHat, Lock, Trophy } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
@@ -43,6 +44,8 @@ const Home = () => {
   const [tipLoading, setTipLoading] = useState(false);
   const [tipGenerated, setTipGenerated] = useState(false);
   const [userCountry, setUserCountry] = useState<string | null>(null);
+  const [activeChallenges, setActiveChallenges] = useState<any[]>([]);
+  const [challengesLoading, setChallengesLoading] = useState(false);
   const fallbackQuote = useMemo(() => getDailyQuote(), []);
   const dailyTip = useMemo(() => getDailyTip(), []);
   
@@ -73,6 +76,33 @@ const Home = () => {
     };
     
     checkTutorial();
+  }, [currentUser]);
+
+  // Fetch active challenges
+  useEffect(() => {
+    const fetchActiveChallenges = async () => {
+      if (!currentUser?.uid) return;
+      
+      try {
+        setChallengesLoading(true);
+        const response = await fetch(`http://localhost:3000/api/challenges/user/${currentUser.uid}/active`, {
+          headers: {
+            'Authorization': `Bearer ${await currentUser.getIdToken()}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setActiveChallenges(data.data || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch active challenges:', error);
+      } finally {
+        setChallengesLoading(false);
+      }
+    };
+
+    fetchActiveChallenges();
   }, [currentUser]);
 
   // Generate daily scripture on mount (only once per session)
@@ -311,6 +341,88 @@ const Home = () => {
             </Button>
           </Link>
         </div>
+      </div>
+
+      {/* Active Challenges */}
+      <div className="px-6 mb-8">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold font-heading">Your Challenges</h2>
+          <Link to="/challenges">
+            <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80">
+              View All →
+            </Button>
+          </Link>
+        </div>
+        
+        {challengesLoading ? (
+          <div className="bg-card rounded-3xl p-6 shadow-card border border-border animate-pulse">
+            <div className="h-20 bg-muted rounded"></div>
+          </div>
+        ) : activeChallenges.length > 0 ? (
+          <Link to={`/challenges/${activeChallenges[0].id}`} className="block">
+            <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-accent/10 rounded-3xl p-6 shadow-card border border-primary/20 hover:shadow-glow hover:border-primary/40 transition-all duration-300 group">
+              <div className="flex items-start gap-4">
+                {activeChallenges[0].imageUrl ? (
+                  <img 
+                    src={activeChallenges[0].imageUrl} 
+                    alt={activeChallenges[0].name}
+                    className="w-14 h-14 rounded-2xl object-cover group-hover:scale-110 transition-transform duration-300"
+                  />
+                ) : (
+                  <div className="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                    <Trophy className="w-7 h-7 text-primary" />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg mb-1">{activeChallenges[0].name}</h3>
+                  <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
+                    {activeChallenges[0].description}
+                  </p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="secondary" className="text-xs">
+                      <Trophy className="w-3 h-3 mr-1" />
+                      {activeChallenges[0].points} pts
+                    </Badge>
+                    <Badge variant="secondary" className="text-xs">
+                      {activeChallenges[0].duration} days
+                    </Badge>
+                    {activeChallenges.length > 1 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{activeChallenges.length - 1} more
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Link>
+        ) : (
+          <Link to="/challenges" className="block">
+            <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-accent/10 rounded-3xl p-6 shadow-card border border-primary/20 hover:shadow-glow hover:border-primary/40 transition-all duration-300 group">
+              <div className="flex items-start gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <Users className="w-7 h-7 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg mb-1">Join a Challenge</h3>
+                  <p className="text-muted-foreground text-sm mb-3">
+                    Connect with others and achieve your goals together
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-xs">
+                      <Users className="w-3 h-3 mr-1" />
+                      Community
+                    </Badge>
+                    <Badge variant="secondary" className="text-xs">
+                      <Trophy className="w-3 h-3 mr-1" />
+                      Earn Rewards
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Link>
+        )}
       </div>
 
       {/* Today's Meals */}

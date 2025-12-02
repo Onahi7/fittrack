@@ -299,9 +299,6 @@ const Challenges = () => {
                 const daysCompleted = (challenge.duration || 0) - daysLeft;
                 const progressPercentage = challenge.duration ? (daysCompleted / challenge.duration) * 100 : 0;
                 
-                // Debug log to see what we're getting
-                console.log('Challenge data:', challenge);
-                
                 return (
                   <div key={`active-${challenge.id}`} className="bg-card/50 backdrop-blur-sm rounded-3xl overflow-hidden shadow-card border border-border/50">
                     {/* Challenge Image/Banner */}
@@ -457,9 +454,17 @@ const Challenges = () => {
                 return (
                   <div key={`upcoming-${challenge.id}`} className="bg-card/50 backdrop-blur-sm rounded-3xl p-6 shadow-card border border-border/50">
                     <div className="flex items-start gap-4">
-                      <div className="w-16 h-16 rounded-2xl bg-secondary/10 flex items-center justify-center text-3xl">
-                        {challenge.imageUrl || icon}
-                      </div>
+                      {challenge.imageUrl ? (
+                        <img 
+                          src={challenge.imageUrl as string}
+                          alt={challenge.name || 'Challenge'}
+                          className="w-16 h-16 rounded-2xl object-cover"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-2xl bg-secondary/10 flex items-center justify-center text-3xl">
+                          {icon}
+                        </div>
+                      )}
                       <div className="flex-1">
                         <h3 className="font-bold text-lg mb-1 font-heading">{challenge.name}</h3>
                         <p className="text-sm text-muted-foreground mb-3">{challenge.description}</p>
